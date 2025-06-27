@@ -1,12 +1,10 @@
 import 'package:flutter_test/flutter_test.dart';
 
-// Ejemplo de función simple que podrías tener en tu proyecto
 String capitalize(String text) {
   if (text.isEmpty) return text;
   return text[0].toUpperCase() + text.substring(1).toLowerCase();
 }
 
-// Función para obtener color de prioridad (simulado)
 String getPriorityColor(String priority) {
   switch (priority.toLowerCase()) {
     case 'baja':
@@ -21,27 +19,27 @@ String getPriorityColor(String priority) {
 }
 
 void main() {
-  group('Función capitalize', () {
-    test('Convierte la primera letra a mayúscula y resto a minúscula', () {
+  group('Tests para capitalize', () {
+    test('Convierte la primera letra a mayúscula', () {
       expect(capitalize('hola'), 'Hola');
       expect(capitalize('mUNDO'), 'Mundo');
     });
 
-    test('Si el texto está vacío, retorna vacío', () {
+    test('Retorna cadena vacía si el texto es vacío', () {
       expect(capitalize(''), '');
     });
   });
 
-  group('Función getPriorityColor', () {
-    test('Devuelve color correcto para prioridad baja', () {
+  group('Tests para getPriorityColor', () {
+    test('Devuelve verde para prioridad baja', () {
       expect(getPriorityColor('baja'), 'verde');
     });
 
-    test('Devuelve color correcto para prioridad media', () {
+    test('Devuelve naranja para prioridad media', () {
       expect(getPriorityColor('media'), 'naranja');
     });
 
-    test('Devuelve color correcto para prioridad alta', () {
+    test('Devuelve rojo para prioridad alta', () {
       expect(getPriorityColor('alta'), 'rojo');
     });
 
