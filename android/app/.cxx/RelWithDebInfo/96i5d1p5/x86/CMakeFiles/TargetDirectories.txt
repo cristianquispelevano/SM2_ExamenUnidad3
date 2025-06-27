@@ -1,0 +1,2 @@
+C:/Users/MARCELO/Desktop/Ticket/Proyecto-Tickets-Moviles_II/android/app/.cxx/RelWithDebInfo/96i5d1p5/x86/CMakeFiles/edit_cache.dir
+C:/Users/MARCELO/Desktop/Ticket/Proyecto-Tickets-Moviles_II/android/app/.cxx/RelWithDebInfo/96i5d1p5/x86/CMakeFiles/rebuild_cache.dir

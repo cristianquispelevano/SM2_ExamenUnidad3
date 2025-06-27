@@ -1,0 +1,31 @@
+// archivo android/build.gradle
+buildscript {
+    repositories {
+        google()
+        mavenCentral()
+    }
+    // archivo android/build.gradle
+dependencies {
+    classpath 'com.android.tools:desugar_jdk_libs:1.2.0'  // Asegúrate de agregar esto
+}
+
+}
+
+allprojects {
+    repositories {
+        google()
+        mavenCentral()
+    }
+}
+
+rootProject.buildDir = "../build"
+subprojects {
+    project.buildDir = "${rootProject.buildDir}/${project.name}"
+}
+subprojects {
+    project.evaluationDependsOn(":app")
+}
+
+tasks.register("clean", Delete) {
+    delete rootProject.buildDir
+}

@@ -1,0 +1,2 @@
+D:/AppTickets/Proyecto-Tickets-Moviles_II/android/app/.cxx/RelWithDebInfo/341p734f/armeabi-v7a/CMakeFiles/edit_cache.dir
+D:/AppTickets/Proyecto-Tickets-Moviles_II/android/app/.cxx/RelWithDebInfo/341p734f/armeabi-v7a/CMakeFiles/rebuild_cache.dir
