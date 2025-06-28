@@ -7,16 +7,15 @@ import 'package:proyecto_moviles2/screens/create_ticket_screen.dart';
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 import 'package:path_provider/path_provider.dart';
-import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:permission_handler/permission_handler.dart';
-import 'package:open_filex/open_filex.dart'; // No olvides instalarlo
+import 'package:open_filex/open_filex.dart';
 
 class ViewTicketsScreen extends StatefulWidget {
   final String userId;
   final List<Ticket>? tickets;
 
   const ViewTicketsScreen({Key? key, required this.userId, this.tickets})
-    : super(key: key);
+      : super(key: key);
 
   @override
   State<ViewTicketsScreen> createState() => _ViewTicketsScreenState();
@@ -44,10 +43,9 @@ class _ViewTicketsScreenState extends State<ViewTicketsScreen> {
             Text(
               DateFormat('dd/MM/yyyy').format(DateTime.now()),
               style: const TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.w400,
-                color: Colors.white70,
-              ),
+                  fontSize: 14,
+                  fontWeight: FontWeight.w400,
+                  color: Colors.white70),
             ),
           ],
         ),
@@ -59,25 +57,23 @@ class _ViewTicketsScreenState extends State<ViewTicketsScreen> {
           ),
         ],
       ),
-
-      body:
-          widget.tickets != null
-              ? _buildTicketsList(widget.tickets!)
-              : StreamBuilder<List<Ticket>>(
-                stream: _ticketService.obtenerTicketsPorUsuario(widget.userId),
-                builder: (context, snapshot) {
-                  if (snapshot.connectionState == ConnectionState.waiting) {
-                    return const Center(child: CircularProgressIndicator());
-                  }
-                  if (snapshot.hasError) {
-                    return _buildErrorWidget(snapshot.error.toString());
-                  }
-                  if (!snapshot.hasData || snapshot.data!.isEmpty) {
-                    return _buildEmptyState();
-                  }
-                  return _buildTicketsList(snapshot.data!);
-                },
-              ),
+      body: widget.tickets != null
+          ? _buildTicketsList(widget.tickets!)
+          : StreamBuilder<List<Ticket>>(
+              stream: _ticketService.obtenerTicketsPorUsuario(widget.userId),
+              builder: (context, snapshot) {
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  return const Center(child: CircularProgressIndicator());
+                }
+                if (snapshot.hasError) {
+                  return _buildErrorWidget(snapshot.error.toString());
+                }
+                if (!snapshot.hasData || snapshot.data!.isEmpty) {
+                  return _buildEmptyState();
+                }
+                return _buildTicketsList(snapshot.data!);
+              },
+            ),
       floatingActionButton: FloatingActionButton(
         onPressed: () => _navigateToCreateTicket(context),
         tooltip: 'Crear Ticket',
@@ -133,32 +129,24 @@ class _ViewTicketsScreenState extends State<ViewTicketsScreen> {
       itemCount: tickets.length,
       itemBuilder: (context, index) {
         final ticket = tickets[index];
-
         return Card(
           margin: const EdgeInsets.symmetric(vertical: 8),
           elevation: 4,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
-          ),
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
           child: ListTile(
-            contentPadding: const EdgeInsets.symmetric(
-              horizontal: 20,
-              vertical: 12,
-            ),
-            leading:
-                (ticket.prioridad != null && ticket.prioridad!.isNotEmpty)
-                    ? Container(
-                      width: 16,
-                      height: 16,
-                      decoration: BoxDecoration(
-                        color: _getPriorityColor(ticket.prioridad!),
-                        shape: BoxShape.circle,
-                      ),
-                    )
-                    : const Icon(
-                      Icons.priority_high,
-                      color: Colors.grey,
-                    ), // Icono si no hay prioridad
+            contentPadding:
+                const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+            leading: (ticket.prioridad != null && ticket.prioridad!.isNotEmpty)
+                ? Container(
+                    width: 16,
+                    height: 16,
+                    decoration: BoxDecoration(
+                      color: _getPriorityColor(ticket.prioridad!),
+                      shape: BoxShape.circle,
+                    ),
+                  )
+                : const Icon(Icons.priority_high, color: Colors.grey),
             title: Text(
               ticket.titulo,
               style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
@@ -177,11 +165,8 @@ class _ViewTicketsScreenState extends State<ViewTicketsScreen> {
                 const SizedBox(height: 4),
                 Row(
                   children: [
-                    const Icon(
-                      Icons.date_range,
-                      size: 16,
-                      color: Colors.blueGrey,
-                    ),
+                    const Icon(Icons.date_range,
+                        size: 16, color: Colors.blueGrey),
                     const SizedBox(width: 4),
                     Text('Creado: ${_dateFormat.format(ticket.fechaCreacion)}'),
                   ],
@@ -224,28 +209,6 @@ class _ViewTicketsScreenState extends State<ViewTicketsScreen> {
     }
   }
 
-  Widget _buildStatusIndicator(String status) {
-    final color = _getStatusColor(status);
-    return Container(
-      width: 12,
-      height: 12,
-      decoration: BoxDecoration(color: color, shape: BoxShape.circle),
-    );
-  }
-
-  Color _getStatusColor(String status) {
-    switch (status.toLowerCase()) {
-      case 'pendiente':
-        return Colors.orange;
-      case 'en proceso':
-        return Colors.blue;
-      case 'resuelto':
-        return Colors.green;
-      default:
-        return Colors.grey;
-    }
-  }
-
   String _capitalize(String text) {
     if (text.isEmpty) return text;
     return text[0].toUpperCase() + text.substring(1).toLowerCase();
@@ -254,15 +217,14 @@ class _ViewTicketsScreenState extends State<ViewTicketsScreen> {
   void _navigateToCreateTicket(BuildContext context) {
     Navigator.push(
       context,
-      MaterialPageRoute(builder: (_) => CreateTicketScreen()),
+      MaterialPageRoute(builder: (_) => const CreateTicketScreen()),
     );
   }
 
   void _navigateToTicketDetail(BuildContext context, Ticket ticket) {
-    // Aquí puedes implementar una pantalla de detalle si deseas
+    // Implementar detalle si quieres
   }
 
-  /// ✅ Función corregida: solo guarda PDF local en Android/iOS
   Future<void> _generatePdf(Ticket ticket) async {
     final pdf = pw.Document();
 
@@ -274,13 +236,9 @@ class _ViewTicketsScreenState extends State<ViewTicketsScreen> {
           return pw.Column(
             crossAxisAlignment: pw.CrossAxisAlignment.start,
             children: [
-              pw.Text(
-                'Ticket de soporte',
-                style: pw.TextStyle(
-                  fontSize: 26,
-                  fontWeight: pw.FontWeight.bold,
-                ),
-              ),
+              pw.Text('Ticket de soporte',
+                  style: pw.TextStyle(
+                      fontSize: 26, fontWeight: pw.FontWeight.bold)),
               pw.SizedBox(height: 20),
               pw.Container(
                 padding: const pw.EdgeInsets.all(16),
@@ -292,56 +250,34 @@ class _ViewTicketsScreenState extends State<ViewTicketsScreen> {
                 child: pw.Column(
                   crossAxisAlignment: pw.CrossAxisAlignment.start,
                   children: [
-                    pw.Text(
-                      'Título:',
-                      style: pw.TextStyle(fontWeight: pw.FontWeight.bold),
-                    ),
-                    pw.Text(
-                      ticket.titulo,
-                      style: const pw.TextStyle(fontSize: 16),
-                    ),
+                    pw.Text('Título:',
+                        style: pw.TextStyle(fontWeight: pw.FontWeight.bold)),
+                    pw.Text(ticket.titulo,
+                        style: const pw.TextStyle(fontSize: 16)),
                     pw.SizedBox(height: 10),
-
-                    pw.Text(
-                      'Descripción:',
-                      style: pw.TextStyle(fontWeight: pw.FontWeight.bold),
-                    ),
-                    pw.Text(
-                      ticket.descripcion,
-                      style: const pw.TextStyle(fontSize: 14),
-                    ),
+                    pw.Text('Descripción:',
+                        style: pw.TextStyle(fontWeight: pw.FontWeight.bold)),
+                    pw.Text(ticket.descripcion,
+                        style: const pw.TextStyle(fontSize: 14)),
                     pw.SizedBox(height: 10),
-
-                    pw.Text(
-                      'Fecha de creación:',
-                      style: pw.TextStyle(fontWeight: pw.FontWeight.bold),
-                    ),
+                    pw.Text('Fecha de creación:',
+                        style: pw.TextStyle(fontWeight: pw.FontWeight.bold)),
                     pw.Text(_dateFormat.format(ticket.fechaCreacion)),
                     pw.SizedBox(height: 10),
-
-                    pw.Text(
-                      'Estado:',
-                      style: pw.TextStyle(fontWeight: pw.FontWeight.bold),
-                    ),
+                    pw.Text('Estado:',
+                        style: pw.TextStyle(fontWeight: pw.FontWeight.bold)),
                     pw.Text(_capitalize(ticket.estado)),
                     pw.SizedBox(height: 10),
-
                     if (ticket.prioridad != null &&
                         ticket.prioridad!.isNotEmpty) ...[
-                      pw.Text(
-                        'Prioridad:',
-                        style: pw.TextStyle(fontWeight: pw.FontWeight.bold),
-                      ),
+                      pw.Text('Prioridad:',
+                          style: pw.TextStyle(fontWeight: pw.FontWeight.bold)),
                       pw.Text(_capitalize(ticket.prioridad!)),
                     ],
                   ],
                 ),
               ),
               pw.SizedBox(height: 40),
-              pw.Text(
-                '',
-                style: pw.TextStyle(fontSize: 10, color: PdfColors.grey600),
-              ),
             ],
           );
         },
@@ -351,35 +287,57 @@ class _ViewTicketsScreenState extends State<ViewTicketsScreen> {
     try {
       final bytes = await pdf.save();
 
-      // Solicita permiso
-      if (await Permission.storage.request().isDenied) {
+      // Manejar permisos almacenamiento según Android versión y plataforma
+      final storageStatus = await Permission.storage.status;
+      if (!storageStatus.isGranted) {
+        final result = await Permission.storage.request();
+        if (!result.isGranted) {
+          if (!mounted) return;
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Permiso de almacenamiento denegado')),
+          );
+          return;
+        }
+      }
+
+      Directory? downloadsDir;
+
+      if (Platform.isAndroid) {
+        downloadsDir = Directory('/storage/emulated/0/Download');
+        if (!await downloadsDir.exists()) {
+          downloadsDir = await getExternalStorageDirectory();
+        }
+      } else if (Platform.isIOS) {
+        downloadsDir = await getApplicationDocumentsDirectory();
+      } else {
+        downloadsDir = await getTemporaryDirectory();
+      }
+
+      if (downloadsDir == null) {
+        if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Permiso de almacenamiento denegado')),
+          const SnackBar(
+              content: Text('No se pudo acceder a la carpeta de descargas')),
         );
         return;
       }
 
-      // Guarda en carpeta Descargas
-      final downloadsDir = Directory('/storage/emulated/0/Download');
-      if (!await downloadsDir.exists()) {
-        await downloadsDir.create(recursive: true);
-      }
-
       final filePath =
-          '${downloadsDir.path}/ticket_${ticket.titulo}_${DateTime.now().millisecondsSinceEpoch}.pdf';
+          '${downloadsDir.path}/ticket_${ticket.titulo.replaceAll(' ', '_')}_${DateTime.now().millisecondsSinceEpoch}.pdf';
+
       final file = File(filePath);
       await file.writeAsBytes(bytes);
 
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('PDF guardado en Descargas:\n$filePath')),
       );
 
-      // Abre el PDF
       await OpenFilex.open(file.path);
     } catch (e) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('Error al generar PDF: $e')));
+      if (!mounted) return;
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text('Error al generar PDF: $e')));
     }
   }
 }

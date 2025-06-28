@@ -1,11 +1,10 @@
-// dashboard_widget.dart
 import 'package:flutter/material.dart';
 import 'package:proyecto_moviles2/model/ticket_model.dart';
 
 class DashboardWidget extends StatelessWidget {
   final List<Ticket> tickets;
 
-  DashboardWidget({required this.tickets});
+  const DashboardWidget({Key? key, required this.tickets}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
@@ -14,18 +13,18 @@ class DashboardWidget extends StatelessWidget {
     final enProceso = tickets.where((t) => t.estado == 'en_proceso').length;
     final resueltos = tickets.where((t) => t.estado == 'resuelto').length;
 
-    final bajas = tickets.where((t) => t.prioridad == 'baja').length;
-    final medias = tickets.where((t) => t.prioridad == 'media').length;
-    final altas = tickets.where((t) => t.prioridad == 'alta').length;
+    // Si quieres mostrar el resumen de prioridades, puedes agregarlo similarmente
 
     return Padding(
       padding: const EdgeInsets.all(8.0),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Text('Resumen de Tickets',
-              style: Theme.of(context).textTheme.titleLarge),
-          SizedBox(height: 10),
+          Text(
+            'Resumen de Tickets',
+            style: Theme.of(context).textTheme.titleLarge,
+          ),
+          const SizedBox(height: 10),
           Wrap(
             spacing: 10,
             runSpacing: 10,
@@ -49,18 +48,22 @@ class DashboardWidget extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(label,
-                style: TextStyle(fontWeight: FontWeight.bold, color: color)),
-            SizedBox(height: 4),
+            Text(
+              label,
+              style: TextStyle(fontWeight: FontWeight.bold, color: color),
+            ),
+            const SizedBox(height: 4),
             LinearProgressIndicator(
               value: porcentaje,
               backgroundColor: color.withOpacity(0.2),
               valueColor: AlwaysStoppedAnimation<Color>(color),
               minHeight: 8,
             ),
-            SizedBox(height: 4),
-            Text('$count tickets (${(porcentaje * 100).toStringAsFixed(1)}%)',
-                style: TextStyle(color: Colors.black87)),
+            const SizedBox(height: 4),
+            Text(
+              '$count tickets (${(porcentaje * 100).toStringAsFixed(1)}%)',
+              style: const TextStyle(color: Colors.black87),
+            ),
           ],
         ),
       ),
