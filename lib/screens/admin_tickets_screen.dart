@@ -1,4 +1,113 @@
-(fontSize: 16, fontWeight: FontWeight.w600),
+import 'package:flutter/material.dart';
+import 'package:proyecto_moviles2/model/ticket_model.dart';
+import 'package:proyecto_moviles2/services/ticket_service.dart';
+import 'package:proyecto_moviles2/services/auth_service.dart';
+import 'package:proyecto_moviles2/screens/login_screen.dart';
+import 'package:proyecto_moviles2/screens/admin_ticket_detail_screen.dart';
+import 'package:proyecto_moviles2/screens/admin_users_screen.dart';
+import 'package:proyecto_moviles2/widgets/dashboard_widget.dart';
+
+class AdminTicketsScreen extends StatefulWidget {
+  const AdminTicketsScreen({super.key});
+
+  @override
+  AdminTicketsScreenState createState() => AdminTicketsScreenState();
+}
+
+class AdminTicketsScreenState extends State<AdminTicketsScreen> {
+  String _searchQuery = '';
+  final TextEditingController _searchController = TextEditingController();
+  String _filterStatus = 'todos';
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  Color _getStatusColor(String estado) {
+    switch (estado) {
+      case 'pendiente':
+        return Colors.amber.shade700;
+      case 'en_proceso':
+        return Colors.blueAccent;
+      case 'resuelto':
+        return Colors.green;
+      default:
+        return Colors.grey;
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    const primaryColor = Color(0xFF3B5998);
+    const buttonColor = Color(0xFF4267B2);
+
+    return Scaffold(
+      backgroundColor: const Color(0xFFF9FAFB),
+      appBar: AppBar(
+        backgroundColor: primaryColor,
+        title: const Text(
+          'Administrador de Tickets',
+          style: TextStyle(color: Colors.white),
+        ),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.exit_to_app, color: Colors.white),
+            tooltip: 'Cerrar sesión',
+            onPressed: () async {
+              final navigator = Navigator.of(context);
+              await AuthService().signOut();
+              if (!mounted) return;
+              navigator.pushReplacement(
+                MaterialPageRoute(builder: (_) => const LoginScreen()),
+              );
+            },
+          ),
+        ],
+      ),
+      body: Column(
+        children: [
+          const SizedBox(height: 16),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 20),
+            child: Row(
+              children: [
+                const Text(
+                  "Filtrar:",
+                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                ),
+                const SizedBox(width: 16),
+                DropdownButton<String>(
+                  value: _filterStatus,
+                  dropdownColor: Colors.white,
+                  style: const TextStyle(
+                    color: Colors.black87,
+                    fontWeight: FontWeight.w600,
+                  ),
+                  items: ['todos', 'pendiente', 'en_proceso', 'resuelto']
+                      .map(
+                        (status) => DropdownMenuItem(
+                          value: status,
+                          child: Text(
+                            status.toUpperCase(),
+                            style: const TextStyle(letterSpacing: 1.2),
+                          ),
+                        ),
+                      )
+                      .toList(),
+                  onChanged: (value) {
+                    if (value != null) {
+                      setState(() => _filterStatus = value);
+                    }
+                  },
+                ),
+                const Spacer(),
+                ElevatedButton.icon(
+                  icon: const Icon(Icons.group, size: 20),
+                  label: const Text(
+                    'Usuarios',
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
                   ),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: buttonColor,
@@ -16,8 +125,7 @@
                   onPressed: () {
                     Navigator.push(
                       context,
-                      MaterialPageRoute(
-                          builder: (_) => const AdminUsersScreen()),
+                      MaterialPageRoute(builder: (_) => AdminUsersScreen()),
                     );
                   },
                 ),
@@ -261,7 +369,7 @@
             onPressed: () async {
               final navigator = Navigator.of(context);
               await TicketService().eliminarTicket(ticket.id);
-              if (!context.mounted) return;
+              if (!mounted) return;
               navigator.pop();
             },
             child: const Text('Eliminar'),
