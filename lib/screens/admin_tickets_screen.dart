@@ -125,8 +125,7 @@ class AdminTicketsScreenState extends State<AdminTicketsScreen> {
                   onPressed: () {
                     Navigator.push(
                       context,
-                      MaterialPageRoute(
-                          builder: (_) => const AdminUsersScreen()),
+                      MaterialPageRoute(builder: (_) => AdminUsersScreen()),
                     );
                   },
                 ),
