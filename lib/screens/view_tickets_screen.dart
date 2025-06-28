@@ -14,21 +14,24 @@ class ViewTicketsScreen extends StatefulWidget {
   final String userId;
   final List<Ticket>? tickets;
 
-  const ViewTicketsScreen({Key? key, required this.userId, this.tickets})
-      : super(key: key);
+  const ViewTicketsScreen({
+    super.key,
+    required this.userId,
+    this.tickets,
+  });
 
   @override
-  State<ViewTicketsScreen> createState() => _ViewTicketsScreenState();
+  ViewTicketsScreenState createState() => ViewTicketsScreenState();
 }
 
-class _ViewTicketsScreenState extends State<ViewTicketsScreen> {
+class ViewTicketsScreenState extends State<ViewTicketsScreen> {
   final TicketService _ticketService = TicketService();
   final DateFormat _dateFormat = DateFormat('dd/MM/yyyy HH:mm');
   bool _isGeneratingPdf = false;
 
   @override
   Widget build(BuildContext context) {
-    final primaryColor = const Color(0xFF3B5998);
+    const primaryColor = Color(0xFF3B5998);
 
     return Scaffold(
       appBar: AppBar(
@@ -46,9 +49,10 @@ class _ViewTicketsScreenState extends State<ViewTicketsScreen> {
             Text(
               DateFormat('dd/MM/yyyy').format(DateTime.now()),
               style: const TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w400,
-                  color: Colors.white70),
+                fontSize: 14,
+                fontWeight: FontWeight.w400,
+                color: Colors.white70,
+              ),
             ),
           ],
         ),
@@ -83,9 +87,7 @@ class _ViewTicketsScreenState extends State<ViewTicketsScreen> {
           if (_isGeneratingPdf)
             Container(
               color: Colors.black.withOpacity(0.5),
-              child: const Center(
-                child: CircularProgressIndicator(),
-              ),
+              child: const Center(child: CircularProgressIndicator()),
             ),
         ],
       ),
@@ -147,8 +149,9 @@ class _ViewTicketsScreenState extends State<ViewTicketsScreen> {
         return Card(
           margin: const EdgeInsets.symmetric(vertical: 8),
           elevation: 4,
-          shape:
-              RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
           child: ListTile(
             contentPadding:
                 const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
@@ -164,7 +167,10 @@ class _ViewTicketsScreenState extends State<ViewTicketsScreen> {
                 : const Icon(Icons.priority_high, color: Colors.grey),
             title: Text(
               ticket.titulo,
-              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
+              style: const TextStyle(
+                fontWeight: FontWeight.bold,
+                fontSize: 18,
+              ),
             ),
             subtitle: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -224,10 +230,9 @@ class _ViewTicketsScreenState extends State<ViewTicketsScreen> {
     }
   }
 
-  String _capitalize(String text) {
-    if (text.isEmpty) return text;
-    return text[0].toUpperCase() + text.substring(1).toLowerCase();
-  }
+  String _capitalize(String text) => text.isEmpty
+      ? text
+      : text[0].toUpperCase() + text.substring(1).toLowerCase();
 
   void _navigateToCreateTicket(BuildContext context) {
     Navigator.push(
@@ -236,22 +241,14 @@ class _ViewTicketsScreenState extends State<ViewTicketsScreen> {
     );
   }
 
-  void _navigateToTicketDetail(BuildContext context, Ticket ticket) {
-    // Implementar detalle si quieres
-  }
+  void _navigateToTicketDetail(BuildContext context, Ticket ticket) {}
 
   Future<void> _onGeneratePdfPressed(Ticket ticket) async {
-    setState(() {
-      _isGeneratingPdf = true;
-    });
+    setState(() => _isGeneratingPdf = true);
     try {
       await _generatePdf(ticket);
     } finally {
-      if (mounted) {
-        setState(() {
-          _isGeneratingPdf = false;
-        });
-      }
+      if (mounted) setState(() => _isGeneratingPdf = false);
     }
   }
 
@@ -262,60 +259,57 @@ class _ViewTicketsScreenState extends State<ViewTicketsScreen> {
       pw.Page(
         pageFormat: PdfPageFormat.a4,
         margin: const pw.EdgeInsets.all(32),
-        build: (context) {
-          return pw.Column(
-            crossAxisAlignment: pw.CrossAxisAlignment.start,
-            children: [
-              pw.Text('Ticket de soporte',
-                  style: pw.TextStyle(
-                      fontSize: 26, fontWeight: pw.FontWeight.bold)),
-              pw.SizedBox(height: 20),
-              pw.Container(
-                padding: const pw.EdgeInsets.all(16),
-                decoration: pw.BoxDecoration(
-                  border: pw.Border.all(color: PdfColors.grey600),
-                  borderRadius: pw.BorderRadius.circular(10),
-                  color: PdfColors.grey100,
-                ),
-                child: pw.Column(
-                  crossAxisAlignment: pw.CrossAxisAlignment.start,
-                  children: [
-                    pw.Text('Título:',
-                        style: pw.TextStyle(fontWeight: pw.FontWeight.bold)),
-                    pw.Text(ticket.titulo,
-                        style: const pw.TextStyle(fontSize: 16)),
-                    pw.SizedBox(height: 10),
-                    pw.Text('Descripción:',
-                        style: pw.TextStyle(fontWeight: pw.FontWeight.bold)),
-                    pw.Text(ticket.descripcion,
-                        style: const pw.TextStyle(fontSize: 14)),
-                    pw.SizedBox(height: 10),
-                    pw.Text('Fecha de creación:',
-                        style: pw.TextStyle(fontWeight: pw.FontWeight.bold)),
-                    pw.Text(_dateFormat.format(ticket.fechaCreacion)),
-                    pw.SizedBox(height: 10),
-                    pw.Text('Estado:',
-                        style: pw.TextStyle(fontWeight: pw.FontWeight.bold)),
-                    pw.Text(_capitalize(ticket.estado)),
-                    pw.SizedBox(height: 10),
-                    if (ticket.prioridad != null &&
-                        ticket.prioridad!.isNotEmpty) ...[
-                      pw.Text('Prioridad:',
-                          style: pw.TextStyle(fontWeight: pw.FontWeight.bold)),
-                      pw.Text(_capitalize(ticket.prioridad!)),
-                    ],
-                  ],
-                ),
+        build: (context) => pw.Column(
+          crossAxisAlignment: pw.CrossAxisAlignment.start,
+          children: [
+            pw.Text('Ticket de soporte',
+                style:
+                    pw.TextStyle(fontSize: 26, fontWeight: pw.FontWeight.bold)),
+            pw.SizedBox(height: 20),
+            pw.Container(
+              padding: const pw.EdgeInsets.all(16),
+              decoration: pw.BoxDecoration(
+                border: pw.Border.all(color: PdfColors.grey600),
+                borderRadius: pw.BorderRadius.circular(10),
+                color: PdfColors.grey100,
               ),
-              pw.SizedBox(height: 40),
-            ],
-          );
-        },
+              child: pw.Column(
+                crossAxisAlignment: pw.CrossAxisAlignment.start,
+                children: [
+                  pw.Text('Título:',
+                      style: pw.TextStyle(fontWeight: pw.FontWeight.bold)),
+                  pw.Text(ticket.titulo,
+                      style: const pw.TextStyle(fontSize: 16)),
+                  pw.SizedBox(height: 10),
+                  pw.Text('Descripción:',
+                      style: pw.TextStyle(fontWeight: pw.FontWeight.bold)),
+                  pw.Text(ticket.descripcion,
+                      style: const pw.TextStyle(fontSize: 14)),
+                  pw.SizedBox(height: 10),
+                  pw.Text('Fecha de creación:',
+                      style: pw.TextStyle(fontWeight: pw.FontWeight.bold)),
+                  pw.Text(_dateFormat.format(ticket.fechaCreacion)),
+                  pw.SizedBox(height: 10),
+                  pw.Text('Estado:',
+                      style: pw.TextStyle(fontWeight: pw.FontWeight.bold)),
+                  pw.Text(_capitalize(ticket.estado)),
+                  pw.SizedBox(height: 10),
+                  if (ticket.prioridad != null &&
+                      ticket.prioridad!.isNotEmpty) ...[
+                    pw.Text('Prioridad:',
+                        style: pw.TextStyle(fontWeight: pw.FontWeight.bold)),
+                    pw.Text(_capitalize(ticket.prioridad!)),
+                  ],
+                ],
+              ),
+            ),
+            pw.SizedBox(height: 40),
+          ],
+        ),
       ),
     );
 
     final bytes = await pdf.save();
-
     final filename = _sanitizeFileName('ticket_${ticket.titulo}.pdf');
     final file = await _getSaveFile(filename);
 
@@ -329,7 +323,6 @@ class _ViewTicketsScreenState extends State<ViewTicketsScreen> {
     if (!mounted) return;
 
     _showSnackBar('Archivo PDF guardado: ${file.path}');
-
     await OpenFilex.open(file.path);
   }
 
@@ -354,29 +347,21 @@ class _ViewTicketsScreenState extends State<ViewTicketsScreen> {
       }
 
       if (directory == null) return null;
+      if (!directory.existsSync()) await directory.create(recursive: true);
 
-      if (!directory.existsSync()) {
-        directory.createSync(recursive: true);
-      }
-
-      final path = '${directory.path}/$filename';
-      return File(path);
+      return File('${directory.path}/$filename');
     } catch (e) {
       debugPrint('Error al obtener directorio: $e');
       return null;
     }
   }
 
-  String _sanitizeFileName(String name) {
-    // Remueve caracteres no válidos en nombres de archivo
-    final sanitized = name.replaceAll(RegExp(r'[<>:"/\\|?*]'), '_');
-    return sanitized;
-  }
+  String _sanitizeFileName(String name) =>
+      name.replaceAll(RegExp(r'[<>:"/\\|?*]'), '_');
 
   void _showSnackBar(String message) {
     if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(message)),
-    );
+    ScaffoldMessenger.of(context)
+        .showSnackBar(SnackBar(content: Text(message)));
   }
 }

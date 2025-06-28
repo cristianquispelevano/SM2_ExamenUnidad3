@@ -6,13 +6,13 @@ import 'admin_tickets_screen.dart';
 import 'register_screen.dart';
 
 class LoginScreen extends StatefulWidget {
-  const LoginScreen({Key? key}) : super(key: key);
+  const LoginScreen({super.key});
 
   @override
-  _LoginScreenState createState() => _LoginScreenState();
+  LoginScreenState createState() => LoginScreenState();
 }
 
-class _LoginScreenState extends State<LoginScreen> {
+class LoginScreenState extends State<LoginScreen> {
   final TextEditingController _usernameController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
   bool _isLoading = false;
@@ -26,15 +26,14 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 
   Future<void> _login() async {
-    FocusScope.of(context).unfocus(); // Cierra el teclado
+    // Cierra el teclado.
+    FocusScope.of(context).unfocus();
 
     final username = _usernameController.text.trim();
     final password = _passwordController.text.trim();
 
     if (username.isEmpty || password.isEmpty) {
-      setState(() {
-        _errorMessage = 'Por favor, ingrese usuario y contraseña';
-      });
+      setState(() => _errorMessage = 'Por favor, ingrese usuario y contraseña');
       return;
     }
 
@@ -44,6 +43,9 @@ class _LoginScreenState extends State<LoginScreen> {
     });
 
     try {
+      // Guarda una referencia a Navigator antes del primer await.
+      final navigator = Navigator.of(context);
+
       final querySnapshot = await FirebaseFirestore.instance
           .collection('usuarios')
           .where('username', isEqualTo: username)
@@ -89,34 +91,26 @@ class _LoginScreenState extends State<LoginScreen> {
         return;
       }
 
-      final role = userSnapshot.get('rol') as String? ?? '';
+      final role = (userSnapshot.get('rol') as String?)?.toLowerCase() ?? '';
 
-      if (role.toLowerCase() == 'admin') {
-        if (!mounted) return;
-        Navigator.pushReplacement(
-          context,
+      if (!mounted) return; // Verifica que el widget siga montado.
+
+      if (role == 'admin') {
+        navigator.pushReplacement(
           MaterialPageRoute(builder: (_) => const AdminTicketsScreen()),
         );
       } else {
-        if (!mounted) return;
-        Navigator.pushReplacement(
-          context,
+        navigator.pushReplacement(
           MaterialPageRoute(builder: (_) => const HomeScreen()),
         );
       }
     } on FirebaseAuthException catch (e) {
-      setState(() {
-        _errorMessage = _getErrorMessage(e.code);
-      });
+      setState(() => _errorMessage = _getErrorMessage(e.code));
     } catch (e) {
-      setState(() {
-        _errorMessage = 'Error desconocido: $e';
-      });
+      setState(() => _errorMessage = 'Error desconocido: $e');
     } finally {
       if (mounted) {
-        setState(() {
-          _isLoading = false;
-        });
+        setState(() => _isLoading = false);
       }
     }
   }
@@ -137,9 +131,7 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 
   void _navigateToRegister() {
-    if (!mounted) return;
-    Navigator.push(
-      context,
+    Navigator.of(context).push(
       MaterialPageRoute(builder: (_) => const RegisterScreen()),
     );
   }
@@ -151,14 +143,12 @@ class _LoginScreenState extends State<LoginScreen> {
     bool obscureText = false,
     TextInputAction? textInputAction,
     void Function(String)? onSubmitted,
-    Color textColor = Colors.black,
   }) {
     return TextField(
       controller: controller,
       obscureText: obscureText,
       textInputAction: textInputAction,
       onSubmitted: onSubmitted,
-      style: TextStyle(color: textColor),
       decoration: InputDecoration(
         floatingLabelStyle: const TextStyle(color: Colors.black),
         labelText: labelText,
@@ -194,11 +184,8 @@ class _LoginScreenState extends State<LoginScreen> {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(
-                Icons.support_agent_outlined,
-                size: 100,
-                color: primaryColor,
-              ),
+              Icon(Icons.support_agent_outlined,
+                  size: 100, color: primaryColor),
               const SizedBox(height: 24),
               const Text(
                 'Bienvenido',
@@ -220,7 +207,6 @@ class _LoginScreenState extends State<LoginScreen> {
                 labelText: 'Nombre de usuario',
                 prefixIcon: Icons.person,
                 textInputAction: TextInputAction.next,
-                textColor: Colors.black,
               ),
               const SizedBox(height: 20),
               _buildTextField(
@@ -229,7 +215,6 @@ class _LoginScreenState extends State<LoginScreen> {
                 prefixIcon: Icons.lock,
                 obscureText: true,
                 onSubmitted: (_) => _login(),
-                textColor: Colors.black,
               ),
               if (_errorMessage != null) ...[
                 const SizedBox(height: 16),

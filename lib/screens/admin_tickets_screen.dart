@@ -8,13 +8,13 @@ import 'package:proyecto_moviles2/screens/admin_users_screen.dart';
 import 'package:proyecto_moviles2/widgets/dashboard_widget.dart';
 
 class AdminTicketsScreen extends StatefulWidget {
-  const AdminTicketsScreen({Key? key}) : super(key: key);
+  const AdminTicketsScreen({super.key});
 
   @override
-  _AdminTicketsScreenState createState() => _AdminTicketsScreenState();
+  AdminTicketsScreenState createState() => AdminTicketsScreenState();
 }
 
-class _AdminTicketsScreenState extends State<AdminTicketsScreen> {
+class AdminTicketsScreenState extends State<AdminTicketsScreen> {
   String _searchQuery = '';
   final TextEditingController _searchController = TextEditingController();
   String _filterStatus = 'todos';
@@ -56,10 +56,10 @@ class _AdminTicketsScreenState extends State<AdminTicketsScreen> {
             icon: const Icon(Icons.exit_to_app, color: Colors.white),
             tooltip: 'Cerrar sesión',
             onPressed: () async {
+              final navigator = Navigator.of(context);
               await AuthService().signOut();
               if (!mounted) return;
-              Navigator.pushReplacement(
-                context,
+              navigator.pushReplacement(
                 MaterialPageRoute(builder: (_) => const LoginScreen()),
               );
             },
@@ -368,9 +368,10 @@ class _AdminTicketsScreenState extends State<AdminTicketsScreen> {
           ElevatedButton(
             style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
             onPressed: () async {
+              final navigator = Navigator.of(context);
               await TicketService().eliminarTicket(ticket.id);
               if (!mounted) return;
-              Navigator.pop(context);
+              navigator.pop();
             },
             child: const Text('Eliminar'),
           ),
