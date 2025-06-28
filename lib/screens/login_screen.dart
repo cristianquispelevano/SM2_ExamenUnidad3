@@ -6,17 +6,28 @@ import 'admin_tickets_screen.dart';
 import 'register_screen.dart';
 
 class LoginScreen extends StatefulWidget {
+  const LoginScreen({Key? key}) : super(key: key);
+
   @override
   _LoginScreenState createState() => _LoginScreenState();
 }
 
 class _LoginScreenState extends State<LoginScreen> {
-  final _usernameController = TextEditingController();
-  final _passwordController = TextEditingController();
+  final TextEditingController _usernameController = TextEditingController();
+  final TextEditingController _passwordController = TextEditingController();
   bool _isLoading = false;
   String? _errorMessage;
 
+  @override
+  void dispose() {
+    _usernameController.dispose();
+    _passwordController.dispose();
+    super.dispose();
+  }
+
   Future<void> _login() async {
+    FocusScope.of(context).unfocus(); // Cierra el teclado
+
     final username = _usernameController.text.trim();
     final password = _passwordController.text.trim();
 
@@ -33,12 +44,11 @@ class _LoginScreenState extends State<LoginScreen> {
     });
 
     try {
-      final querySnapshot =
-          await FirebaseFirestore.instance
-              .collection('usuarios')
-              .where('username', isEqualTo: username)
-              .limit(1)
-              .get();
+      final querySnapshot = await FirebaseFirestore.instance
+          .collection('usuarios')
+          .where('username', isEqualTo: username)
+          .limit(1)
+          .get();
 
       if (querySnapshot.docs.isEmpty) {
         setState(() {
@@ -49,7 +59,7 @@ class _LoginScreenState extends State<LoginScreen> {
       }
 
       final userDoc = querySnapshot.docs.first;
-      final email = userDoc['email'] as String;
+      final email = userDoc.get('email') as String;
 
       await FirebaseAuth.instance.signInWithEmailAndPassword(
         email: email,
@@ -65,11 +75,10 @@ class _LoginScreenState extends State<LoginScreen> {
         return;
       }
 
-      final userSnapshot =
-          await FirebaseFirestore.instance
-              .collection('usuarios')
-              .doc(user.uid)
-              .get();
+      final userSnapshot = await FirebaseFirestore.instance
+          .collection('usuarios')
+          .doc(user.uid)
+          .get();
 
       if (!userSnapshot.exists) {
         setState(() {
@@ -80,16 +89,19 @@ class _LoginScreenState extends State<LoginScreen> {
         return;
       }
 
-      final rol = userSnapshot.get('rol');
-      if (rol == 'admin') {
+      final role = userSnapshot.get('rol') as String? ?? '';
+
+      if (role.toLowerCase() == 'admin') {
+        if (!mounted) return;
         Navigator.pushReplacement(
           context,
-          MaterialPageRoute(builder: (context) => AdminTicketsScreen()),
+          MaterialPageRoute(builder: (_) => const AdminTicketsScreen()),
         );
       } else {
+        if (!mounted) return;
         Navigator.pushReplacement(
           context,
-          MaterialPageRoute(builder: (context) => HomeScreen()),
+          MaterialPageRoute(builder: (_) => const HomeScreen()),
         );
       }
     } on FirebaseAuthException catch (e) {
@@ -101,7 +113,11 @@ class _LoginScreenState extends State<LoginScreen> {
         _errorMessage = 'Error desconocido: $e';
       });
     } finally {
-      setState(() => _isLoading = false);
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
     }
   }
 
@@ -121,15 +137,54 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 
   void _navigateToRegister() {
+    if (!mounted) return;
     Navigator.push(
       context,
-      MaterialPageRoute(builder: (context) => RegisterScreen()),
+      MaterialPageRoute(builder: (_) => const RegisterScreen()),
+    );
+  }
+
+  Widget _buildTextField({
+    required TextEditingController controller,
+    required String labelText,
+    required IconData prefixIcon,
+    bool obscureText = false,
+    TextInputAction? textInputAction,
+    void Function(String)? onSubmitted,
+    Color textColor = Colors.black,
+  }) {
+    return TextField(
+      controller: controller,
+      obscureText: obscureText,
+      textInputAction: textInputAction,
+      onSubmitted: onSubmitted,
+      style: TextStyle(color: textColor),
+      decoration: InputDecoration(
+        floatingLabelStyle: const TextStyle(color: Colors.black),
+        labelText: labelText,
+        prefixIcon: Icon(prefixIcon),
+        filled: true,
+        fillColor: Colors.white,
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(14),
+          borderSide: BorderSide.none,
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(14),
+          borderSide: BorderSide(color: Colors.grey.shade300),
+        ),
+        focusedBorder: const OutlineInputBorder(
+          borderRadius: BorderRadius.all(Radius.circular(14)),
+          borderSide: BorderSide(color: Color(0xFF3B5998), width: 2),
+        ),
+        contentPadding: const EdgeInsets.symmetric(vertical: 16),
+      ),
     );
   }
 
   @override
   Widget build(BuildContext context) {
-    final primaryColor = const Color(0xFF3B5998);
+    const primaryColor = Color(0xFF3B5998);
 
     return Scaffold(
       backgroundColor: Colors.grey.shade100,
@@ -139,17 +194,13 @@ class _LoginScreenState extends State<LoginScreen> {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              // Logo asistente de soporte
               Icon(
                 Icons.support_agent_outlined,
                 size: 100,
                 color: primaryColor,
               ),
-
               const SizedBox(height: 24),
-
-              // Título Bienvenido
-              Text(
+              const Text(
                 'Bienvenido',
                 style: TextStyle(
                   fontSize: 32,
@@ -158,23 +209,18 @@ class _LoginScreenState extends State<LoginScreen> {
                   letterSpacing: 1.2,
                 ),
               ),
-
               const SizedBox(height: 8),
-
-              // Subtítulo
               Text(
                 'Inicia sesión para continuar',
                 style: TextStyle(fontSize: 16, color: Colors.grey.shade700),
               ),
-
               const SizedBox(height: 32),
-
               _buildTextField(
                 controller: _usernameController,
                 labelText: 'Nombre de usuario',
                 prefixIcon: Icons.person,
                 textInputAction: TextInputAction.next,
-                textColor: Colors.black, // aquí ponemos negro
+                textColor: Colors.black,
               ),
               const SizedBox(height: 20),
               _buildTextField(
@@ -183,7 +229,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 prefixIcon: Icons.lock,
                 obscureText: true,
                 onSubmitted: (_) => _login(),
-                textColor: Colors.black, // aquí también negro
+                textColor: Colors.black,
               ),
               if (_errorMessage != null) ...[
                 const SizedBox(height: 16),
@@ -200,30 +246,30 @@ class _LoginScreenState extends State<LoginScreen> {
               _isLoading
                   ? const CircularProgressIndicator()
                   : SizedBox(
-                    width: double.infinity,
-                    height: 50,
-                    child: ElevatedButton(
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: primaryColor,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(10),
+                      width: double.infinity,
+                      height: 50,
+                      child: ElevatedButton(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: primaryColor,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          elevation: 5,
                         ),
-                        elevation: 5,
-                      ),
-                      onPressed: _login,
-                      child: const Text(
-                        'Iniciar Sesión',
-                        style: TextStyle(fontSize: 18, color: Colors.white),
+                        onPressed: _login,
+                        child: const Text(
+                          'Iniciar Sesión',
+                          style: TextStyle(fontSize: 18, color: Colors.white),
+                        ),
                       ),
                     ),
-                  ),
               const SizedBox(height: 24),
               TextButton(
                 onPressed: _navigateToRegister,
-                child: Text(
+                child: const Text(
                   '¿No tienes cuenta? Regístrate aquí',
                   style: TextStyle(
-                    color: primaryColor,
+                    color: Color(0xFF3B5998),
                     fontWeight: FontWeight.w600,
                   ),
                 ),
@@ -233,50 +279,5 @@ class _LoginScreenState extends State<LoginScreen> {
         ),
       ),
     );
-  }
-
-  Widget _buildTextField({
-    required TextEditingController controller,
-    required String labelText,
-    required IconData prefixIcon,
-    bool obscureText = false,
-    TextInputAction? textInputAction,
-    void Function(String)? onSubmitted,
-    Color textColor = Colors.black, // texto negro por defecto
-  }) {
-    return TextField(
-      controller: controller,
-      obscureText: obscureText,
-      textInputAction: textInputAction,
-      onSubmitted: onSubmitted,
-      style: TextStyle(color: textColor),
-      decoration: InputDecoration(
-        floatingLabelStyle: TextStyle(color: Colors.black),
-        labelText: labelText,
-        prefixIcon: Icon(prefixIcon),
-        filled: true,
-        fillColor: Colors.white,
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(14),
-          borderSide: BorderSide.none,
-        ),
-        enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(14),
-          borderSide: BorderSide(color: Colors.grey.shade300),
-        ),
-        focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(14),
-          borderSide: BorderSide(color: const Color(0xFF3B5998), width: 2),
-        ),
-        contentPadding: const EdgeInsets.symmetric(vertical: 16),
-      ),
-    );
-  }
-
-  @override
-  void dispose() {
-    _usernameController.dispose();
-    _passwordController.dispose();
-    super.dispose();
   }
 }

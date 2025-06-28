@@ -4,19 +4,19 @@ import 'package:proyecto_moviles2/services/ticket_service.dart';
 
 class AdminTicketDetailScreen extends StatefulWidget {
   final Ticket ticket;
-  AdminTicketDetailScreen({required this.ticket});
+  const AdminTicketDetailScreen({Key? key, required this.ticket})
+      : super(key: key);
 
   @override
-  _AdminTicketDetailScreenState createState() =>
-      _AdminTicketDetailScreenState();
+  AdminTicketDetailScreenState createState() => AdminTicketDetailScreenState();
 }
 
-class _AdminTicketDetailScreenState extends State<AdminTicketDetailScreen> {
+class AdminTicketDetailScreenState extends State<AdminTicketDetailScreen> {
   late TextEditingController _tituloController;
-  String _estado = '';
-  String _prioridad = '';
+  late String _estado;
+  late String _prioridad;
 
-  final primaryColor = const Color(0xFF3B5998);
+  static const primaryColor = Color(0xFF3B5998);
 
   @override
   void initState() {
@@ -47,6 +47,7 @@ class _AdminTicketDetailScreenState extends State<AdminTicketDetailScreen> {
     );
 
     await TicketService().actualizarTicket(actualizado);
+    if (!mounted) return;
     Navigator.pop(context);
   }
 
@@ -76,16 +77,17 @@ class _AdminTicketDetailScreenState extends State<AdminTicketDetailScreen> {
                   borderRadius: BorderRadius.circular(12),
                 ),
               ),
-              items:
-                  ['pendiente', 'en_proceso', 'resuelto']
-                      .map(
-                        (e) => DropdownMenuItem(
-                          value: e,
-                          child: Text(e.toUpperCase()),
-                        ),
-                      )
-                      .toList(),
-              onChanged: (val) => setState(() => _estado = val!),
+              items: ['pendiente', 'en_proceso', 'resuelto']
+                  .map(
+                    (e) => DropdownMenuItem(
+                      value: e,
+                      child: Text(e.toUpperCase()),
+                    ),
+                  )
+                  .toList(),
+              onChanged: (val) {
+                if (val != null) setState(() => _estado = val);
+              },
             ),
             const SizedBox(height: 16),
             DropdownButtonFormField<String>(
@@ -98,16 +100,17 @@ class _AdminTicketDetailScreenState extends State<AdminTicketDetailScreen> {
                   borderRadius: BorderRadius.circular(12),
                 ),
               ),
-              items:
-                  ['baja', 'media', 'alta']
-                      .map(
-                        (e) => DropdownMenuItem(
-                          value: e,
-                          child: Text(e.toUpperCase()),
-                        ),
-                      )
-                      .toList(),
-              onChanged: (val) => setState(() => _prioridad = val!),
+              items: ['baja', 'media', 'alta']
+                  .map(
+                    (e) => DropdownMenuItem(
+                      value: e,
+                      child: Text(e.toUpperCase()),
+                    ),
+                  )
+                  .toList(),
+              onChanged: (val) {
+                if (val != null) setState(() => _prioridad = val);
+              },
             ),
             const SizedBox(height: 30),
             SizedBox(
@@ -151,7 +154,7 @@ class _AdminTicketDetailScreenState extends State<AdminTicketDetailScreen> {
         ),
         border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
         focusedBorder: OutlineInputBorder(
-          borderSide: BorderSide(color: primaryColor, width: 2),
+          borderSide: const BorderSide(color: primaryColor, width: 2),
           borderRadius: BorderRadius.circular(12),
         ),
       ),

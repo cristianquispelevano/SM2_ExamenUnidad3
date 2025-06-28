@@ -24,12 +24,15 @@ class ViewTicketsScreen extends StatefulWidget {
 class _ViewTicketsScreenState extends State<ViewTicketsScreen> {
   final TicketService _ticketService = TicketService();
   final DateFormat _dateFormat = DateFormat('dd/MM/yyyy HH:mm');
+  bool _isGeneratingPdf = false;
 
   @override
   Widget build(BuildContext context) {
+    final primaryColor = const Color(0xFF3B5998);
+
     return Scaffold(
       appBar: AppBar(
-        backgroundColor: const Color(0xFF3B5998),
+        backgroundColor: primaryColor,
         elevation: 4,
         automaticallyImplyLeading: true,
         iconTheme: const IconThemeData(color: Colors.white),
@@ -57,23 +60,35 @@ class _ViewTicketsScreenState extends State<ViewTicketsScreen> {
           ),
         ],
       ),
-      body: widget.tickets != null
-          ? _buildTicketsList(widget.tickets!)
-          : StreamBuilder<List<Ticket>>(
-              stream: _ticketService.obtenerTicketsPorUsuario(widget.userId),
-              builder: (context, snapshot) {
-                if (snapshot.connectionState == ConnectionState.waiting) {
-                  return const Center(child: CircularProgressIndicator());
-                }
-                if (snapshot.hasError) {
-                  return _buildErrorWidget(snapshot.error.toString());
-                }
-                if (!snapshot.hasData || snapshot.data!.isEmpty) {
-                  return _buildEmptyState();
-                }
-                return _buildTicketsList(snapshot.data!);
-              },
+      body: Stack(
+        children: [
+          widget.tickets != null
+              ? _buildTicketsList(widget.tickets!)
+              : StreamBuilder<List<Ticket>>(
+                  stream:
+                      _ticketService.obtenerTicketsPorUsuario(widget.userId),
+                  builder: (context, snapshot) {
+                    if (snapshot.connectionState == ConnectionState.waiting) {
+                      return const Center(child: CircularProgressIndicator());
+                    }
+                    if (snapshot.hasError) {
+                      return _buildErrorWidget(snapshot.error.toString());
+                    }
+                    if (!snapshot.hasData || snapshot.data!.isEmpty) {
+                      return _buildEmptyState();
+                    }
+                    return _buildTicketsList(snapshot.data!);
+                  },
+                ),
+          if (_isGeneratingPdf)
+            Container(
+              color: Colors.black.withOpacity(0.5),
+              child: const Center(
+                child: CircularProgressIndicator(),
+              ),
             ),
+        ],
+      ),
       floatingActionButton: FloatingActionButton(
         onPressed: () => _navigateToCreateTicket(context),
         tooltip: 'Crear Ticket',
@@ -186,7 +201,7 @@ class _ViewTicketsScreenState extends State<ViewTicketsScreen> {
             ),
             trailing: IconButton(
               icon: const Icon(Icons.print),
-              onPressed: () => _generatePdf(ticket),
+              onPressed: () => _onGeneratePdfPressed(ticket),
               tooltip: 'Generar PDF',
             ),
             onTap: () => _navigateToTicketDetail(context, ticket),
@@ -223,6 +238,21 @@ class _ViewTicketsScreenState extends State<ViewTicketsScreen> {
 
   void _navigateToTicketDetail(BuildContext context, Ticket ticket) {
     // Implementar detalle si quieres
+  }
+
+  Future<void> _onGeneratePdfPressed(Ticket ticket) async {
+    setState(() {
+      _isGeneratingPdf = true;
+    });
+    try {
+      await _generatePdf(ticket);
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isGeneratingPdf = false;
+        });
+      }
+    }
   }
 
   Future<void> _generatePdf(Ticket ticket) async {
@@ -284,60 +314,69 @@ class _ViewTicketsScreenState extends State<ViewTicketsScreen> {
       ),
     );
 
+    final bytes = await pdf.save();
+
+    final filename = _sanitizeFileName('ticket_${ticket.titulo}.pdf');
+    final file = await _getSaveFile(filename);
+
+    if (file == null) {
+      _showSnackBar('No se pudo obtener directorio para guardar');
+      return;
+    }
+
+    await file.writeAsBytes(bytes);
+
+    if (!mounted) return;
+
+    _showSnackBar('Archivo PDF guardado: ${file.path}');
+
+    await OpenFilex.open(file.path);
+  }
+
+  Future<File?> _getSaveFile(String filename) async {
     try {
-      final bytes = await pdf.save();
-
-      // Manejar permisos almacenamiento según Android versión y plataforma
-      final storageStatus = await Permission.storage.status;
-      if (!storageStatus.isGranted) {
-        final result = await Permission.storage.request();
-        if (!result.isGranted) {
-          if (!mounted) return;
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Permiso de almacenamiento denegado')),
-          );
-          return;
-        }
-      }
-
-      Directory? downloadsDir;
+      Directory? directory;
 
       if (Platform.isAndroid) {
-        downloadsDir = Directory('/storage/emulated/0/Download');
-        if (!await downloadsDir.exists()) {
-          downloadsDir = await getExternalStorageDirectory();
+        final status = await Permission.manageExternalStorage.request();
+        if (!status.isGranted) {
+          _showSnackBar('Permiso de almacenamiento denegado');
+          return null;
+        }
+        directory = Directory('/storage/emulated/0/Download');
+        if (!directory.existsSync()) {
+          directory = await getExternalStorageDirectory();
         }
       } else if (Platform.isIOS) {
-        downloadsDir = await getApplicationDocumentsDirectory();
+        directory = await getApplicationDocumentsDirectory();
       } else {
-        downloadsDir = await getTemporaryDirectory();
+        directory = await getTemporaryDirectory();
       }
 
-      if (downloadsDir == null) {
-        if (!mounted) return;
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-              content: Text('No se pudo acceder a la carpeta de descargas')),
-        );
-        return;
+      if (directory == null) return null;
+
+      if (!directory.existsSync()) {
+        directory.createSync(recursive: true);
       }
 
-      final filePath =
-          '${downloadsDir.path}/ticket_${ticket.titulo.replaceAll(' ', '_')}_${DateTime.now().millisecondsSinceEpoch}.pdf';
-
-      final file = File(filePath);
-      await file.writeAsBytes(bytes);
-
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('PDF guardado en Descargas:\n$filePath')),
-      );
-
-      await OpenFilex.open(file.path);
+      final path = '${directory.path}/$filename';
+      return File(path);
     } catch (e) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(context)
-          .showSnackBar(SnackBar(content: Text('Error al generar PDF: $e')));
+      debugPrint('Error al obtener directorio: $e');
+      return null;
     }
+  }
+
+  String _sanitizeFileName(String name) {
+    // Remueve caracteres no válidos en nombres de archivo
+    final sanitized = name.replaceAll(RegExp(r'[<>:"/\\|?*]'), '_');
+    return sanitized;
+  }
+
+  void _showSnackBar(String message) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(message)),
+    );
   }
 }

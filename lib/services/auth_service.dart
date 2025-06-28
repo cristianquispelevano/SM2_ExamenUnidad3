@@ -6,11 +6,16 @@ class AuthService {
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
-  // Iniciar sesión con username y contraseña
+  /// Iniciar sesión con username y contraseña
   Future<Usuario?> signInWithUsernameAndPassword(
       String username, String password) async {
+    if (username.isEmpty || password.isEmpty) {
+      throw FirebaseAuthException(
+          code: 'invalid-input', message: 'Usuario o contraseña vacíos');
+    }
+
     try {
-      // 1. Buscar usuario por username para obtener el email
+      // Buscar usuario por username para obtener email
       final userQuery = await _firestore
           .collection('usuarios')
           .where('username', isEqualTo: username)
@@ -25,31 +30,44 @@ class AuthService {
       }
 
       final userData = userQuery.docs.first.data();
-      final email = userData['email'] as String;
+      final email = userData['email'] as String? ?? '';
 
-      // 2. Autenticar con Firebase Auth usando el email
+      if (email.isEmpty) {
+        throw FirebaseAuthException(
+          code: 'invalid-user-data',
+          message: 'Email no encontrado para el usuario',
+        );
+      }
+
+      // Autenticar con email y contraseña
       final userCredential = await _auth.signInWithEmailAndPassword(
         email: email,
         password: password,
       );
 
-      // 3. Actualizar último login
-      await _firestore
-          .collection('usuarios')
-          .doc(userCredential.user!.uid)
-          .update({
-        'ultimoLogin': FieldValue.serverTimestamp(),
-      });
+      // Actualizar último login si existe documento en Firestore
+      final userDocRef =
+          _firestore.collection('usuarios').doc(userCredential.user!.uid);
+      final userDoc = await userDocRef.get();
+      if (userDoc.exists) {
+        await userDocRef.update({
+          'ultimoLogin': FieldValue.serverTimestamp(),
+        });
+      }
 
-      // 4. Obtener y devolver el usuario completo
+      // Obtener usuario completo
       return await _getUserFromFirestore(userCredential.user!.uid);
     } on FirebaseAuthException catch (e) {
-      print('Error al iniciar sesión: ${e.message}');
-      return null;
+      // Puedes usar un logger o manejo más sofisticado aquí
+      print('Error al iniciar sesión: ${e.code} - ${e.message}');
+      rethrow;
+    } catch (e) {
+      print('Error inesperado en inicio de sesión: $e');
+      rethrow;
     }
   }
 
-  // Registrar nuevo usuario
+  /// Registrar nuevo usuario
   Future<Usuario?> registerUser({
     required String username,
     required String email,
@@ -57,8 +75,16 @@ class AuthService {
     required String nombreCompleto,
     String rol = 'usuario',
   }) async {
+    if (username.isEmpty ||
+        email.isEmpty ||
+        password.isEmpty ||
+        nombreCompleto.isEmpty) {
+      throw FirebaseAuthException(
+          code: 'invalid-input', message: 'Campos obligatorios vacíos');
+    }
+
     try {
-      // 1. Verificar si el username ya existe
+      // Verificar si el username ya existe
       final usernameQuery = await _firestore
           .collection('usuarios')
           .where('username', isEqualTo: username)
@@ -72,13 +98,12 @@ class AuthService {
         );
       }
 
-      // 2. Crear usuario en Firebase Auth
+      // Crear usuario en Firebase Auth
       final userCredential = await _auth.createUserWithEmailAndPassword(
         email: email,
         password: password,
       );
 
-      // 3. Crear documento de usuario en Firestore
       final nuevoUsuario = Usuario(
         id: userCredential.user!.uid,
         username: username,
@@ -94,43 +119,61 @@ class AuthService {
           .doc(nuevoUsuario.id)
           .set(nuevoUsuario.toFirestore());
 
-      // 4. Enviar email de verificación
+      // Enviar email de verificación
       await userCredential.user!.sendEmailVerification();
 
       return nuevoUsuario;
     } on FirebaseAuthException catch (e) {
-      print('Error al registrar: ${e.message}');
-      return null;
+      print('Error al registrar: ${e.code} - ${e.message}');
+      rethrow;
+    } catch (e) {
+      print('Error inesperado al registrar: $e');
+      rethrow;
     }
   }
 
-  // Cerrar sesión
+  /// Cerrar sesión
   Future<void> signOut() async {
     await _auth.signOut();
   }
 
-  // Obtener usuario actual
+  /// Obtener usuario actual
   Future<Usuario?> get currentUser async {
     final user = _auth.currentUser;
     if (user == null) return null;
-    return await _getUserFromFirestore(user.uid);
+    try {
+      return await _getUserFromFirestore(user.uid);
+    } catch (e) {
+      print('Error obteniendo usuario actual: $e');
+      return null;
+    }
   }
 
-  // Stream de cambios de autenticación
+  /// Stream de cambios de autenticación
   Stream<Usuario?> get user {
     return _auth.authStateChanges().asyncMap((User? user) async {
       if (user == null) return null;
-      return await _getUserFromFirestore(user.uid);
+      try {
+        return await _getUserFromFirestore(user.uid);
+      } catch (e) {
+        print('Error en stream usuario: $e');
+        return null;
+      }
     });
   }
 
-  // Método auxiliar para obtener usuario de Firestore
+  /// Obtener usuario de Firestore, con manejo de documento no existente
   Future<Usuario> _getUserFromFirestore(String uid) async {
     final userDoc = await _firestore.collection('usuarios').doc(uid).get();
+    if (!userDoc.exists) {
+      throw FirebaseAuthException(
+          code: 'user-not-found',
+          message: 'Usuario no encontrado en Firestore');
+    }
     return Usuario.fromFirestore(userDoc);
   }
 
-  // Enviar email de verificación
+  /// Enviar email de verificación
   Future<void> sendVerificationEmail() async {
     final user = _auth.currentUser;
     if (user != null && !user.emailVerified) {
@@ -138,8 +181,12 @@ class AuthService {
     }
   }
 
-  // Restablecer contraseña
+  /// Restablecer contraseña
   Future<void> sendPasswordResetEmail(String email) async {
+    if (email.isEmpty) {
+      throw FirebaseAuthException(
+          code: 'invalid-input', message: 'Email vacío');
+    }
     await _auth.sendPasswordResetEmail(email: email);
   }
 }

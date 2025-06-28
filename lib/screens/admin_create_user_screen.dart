@@ -5,10 +5,10 @@ class AdminCreateUserScreen extends StatefulWidget {
   const AdminCreateUserScreen({Key? key}) : super(key: key);
 
   @override
-  _AdminCreateUserScreenState createState() => _AdminCreateUserScreenState();
+  AdminCreateUserScreenState createState() => AdminCreateUserScreenState();
 }
 
-class _AdminCreateUserScreenState extends State<AdminCreateUserScreen> {
+class AdminCreateUserScreenState extends State<AdminCreateUserScreen> {
   final _formKey = GlobalKey<FormState>();
   final _usernameController = TextEditingController();
   final _emailController = TextEditingController();
@@ -54,6 +54,7 @@ class _AdminCreateUserScreenState extends State<AdminCreateUserScreen> {
         Navigator.pop(context);
       }
     } catch (e) {
+      if (!mounted) return;
       setState(() {
         _errorMessage = 'Error: $e';
       });

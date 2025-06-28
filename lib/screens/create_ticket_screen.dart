@@ -25,6 +25,19 @@ class _CreateTicketScreenState extends State<CreateTicketScreen> {
   final Color primaryColor = const Color(0xFF3B5998);
 
   @override
+  void dispose() {
+    _titleController.dispose();
+    _descriptionController.dispose();
+    super.dispose();
+  }
+
+  void _showSnackBar(String message, {Color bgColor = Colors.red}) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(message), backgroundColor: bgColor),
+    );
+  }
+
+  @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
@@ -49,11 +62,9 @@ class _CreateTicketScreenState extends State<CreateTicketScreen> {
                   labelText: 'Título',
                   border: OutlineInputBorder(),
                 ),
-                validator:
-                    (value) =>
-                        value == null || value.isEmpty
-                            ? 'Por favor ingrese un título'
-                            : null,
+                validator: (value) => value == null || value.isEmpty
+                    ? 'Por favor ingrese un título'
+                    : null,
               ),
               const SizedBox(height: 16),
               TextFormField(
@@ -74,7 +85,6 @@ class _CreateTicketScreenState extends State<CreateTicketScreen> {
                 },
               ),
               const SizedBox(height: 16),
-
               if (_priorityDetermined)
                 Container(
                   padding: const EdgeInsets.symmetric(
@@ -94,7 +104,6 @@ class _CreateTicketScreenState extends State<CreateTicketScreen> {
                     ),
                   ),
                 ),
-
               if (_priorityDetermined && _recommendation != null)
                 Container(
                   margin: const EdgeInsets.only(bottom: 16),
@@ -120,7 +129,6 @@ class _CreateTicketScreenState extends State<CreateTicketScreen> {
                     ],
                   ),
                 ),
-
               DropdownButtonFormField<String>(
                 value: _category,
                 items: _buildCategoryItems(),
@@ -130,7 +138,6 @@ class _CreateTicketScreenState extends State<CreateTicketScreen> {
                   border: OutlineInputBorder(),
                 ),
               ),
-
               const SizedBox(height: 24),
               if (_isLoading)
                 const Center(child: CircularProgressIndicator())
@@ -233,12 +240,7 @@ class _CreateTicketScreenState extends State<CreateTicketScreen> {
         _canCreateTicket = true;
       });
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Error al analizar prioridad: $e'),
-          backgroundColor: Colors.red,
-        ),
-      );
+      _showSnackBar('Error al analizar prioridad: $e');
     } finally {
       setState(() => _isLoading = false);
     }
@@ -258,6 +260,12 @@ class _CreateTicketScreenState extends State<CreateTicketScreen> {
   }
 
   Future<void> _submitTicket() async {
+    if (!_canCreateTicket) {
+      _showSnackBar('Debe analizar la prioridad antes de enviar.',
+          bgColor: Colors.orange);
+      return;
+    }
+
     setState(() => _isLoading = true);
 
     try {
@@ -268,19 +276,14 @@ class _CreateTicketScreenState extends State<CreateTicketScreen> {
         categoria: _category,
       );
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            'Ticket creado con prioridad ${_priority.toUpperCase()}!',
-          ),
-          backgroundColor: Colors.green,
-        ),
+      _showSnackBar(
+        'Ticket creado con prioridad ${_priority.toUpperCase()}!',
+        bgColor: Colors.green,
       );
+
       Navigator.pop(context);
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error: $e'), backgroundColor: Colors.red),
-      );
+      _showSnackBar('Error: $e');
     } finally {
       setState(() => _isLoading = false);
     }
@@ -305,31 +308,36 @@ class _CreateTicketScreenState extends State<CreateTicketScreen> {
     );
 
     if (response.statusCode == 200) {
-      final List<dynamic> outerList = jsonDecode(response.body);
-      if (outerList.isNotEmpty &&
-          outerList[0] is List &&
-          outerList[0].isNotEmpty) {
-        final label = outerList[0][0]['label'] as String;
+      final decoded = jsonDecode(response.body);
+      if (decoded is List && decoded.isNotEmpty) {
+        final first = decoded[0];
+        if (first is List &&
+            first.isNotEmpty &&
+            first[0] is Map<String, dynamic>) {
+          final label = first[0]['label'] as String? ?? '';
 
-        String priority;
-        String recommendation;
+          String priority;
+          String recommendation;
 
-        if (label.startsWith('1') || label.startsWith('2')) {
-          priority = 'alta';
-          recommendation =
-              'Por favor, contacte al soporte técnico de inmediato.';
-        } else if (label.startsWith('3')) {
-          priority = 'media';
-          recommendation = 'Revise los procedimientos estándar y reintente.';
+          if (label.startsWith('1') || label.startsWith('2')) {
+            priority = 'alta';
+            recommendation =
+                'Por favor, contacte al soporte técnico de inmediato.';
+          } else if (label.startsWith('3')) {
+            priority = 'media';
+            recommendation = 'Revise los procedimientos estándar y reintente.';
+          } else {
+            priority = 'baja';
+            recommendation =
+                'Puede esperar una respuesta en las próximas 48 horas.';
+          }
+
+          return {'priority': priority, 'recommendation': recommendation};
         } else {
-          priority = 'baja';
-          recommendation =
-              'Puede esperar una respuesta en las próximas 48 horas.';
+          throw Exception('Formato inesperado en la respuesta.');
         }
-
-        return {'priority': priority, 'recommendation': recommendation};
       } else {
-        throw Exception('Respuesta inesperada del modelo.');
+        throw Exception('Respuesta inesperada del API.');
       }
     } else {
       throw Exception('Error HTTP ${response.statusCode}: ${response.body}');
