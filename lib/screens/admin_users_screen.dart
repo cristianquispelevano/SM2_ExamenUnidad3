@@ -1,179 +1,272 @@
-import 'package:flutter/material.dart';
-import 'package:proyecto_moviles2/model/usuario_model.dart';
-import 'package:proyecto_moviles2/services/usuario_service.dart';
-import 'package:proyecto_moviles2/screens/admin_create_user_screen.dart';
-
-class AdminUsersScreen extends StatelessWidget {
-  final UsuarioService _usuarioService = UsuarioService();
-
-  @override
-  Widget build(BuildContext context) {
-    final primaryColor = const Color(0xFF3B5998);
-
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Administrar Usuarios'),
-        backgroundColor: primaryColor,
-        foregroundColor: Colors.white,
-        elevation: 4,
-      ),
-      backgroundColor: const Color(0xFFF9FAFB),
-      body: StreamBuilder<List<Usuario>>(
-        stream: _usuarioService.obtenerUsuarios(),
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting)
-            return const Center(child: CircularProgressIndicator());
-          if (!snapshot.hasData || snapshot.data!.isEmpty)
-            return const Center(child: Text('No hay usuarios registrados'));
-
-          final usuarios = snapshot.data!;
-          return ListView.builder(
-            padding: const EdgeInsets.all(16),
-            itemCount: usuarios.length,
-            itemBuilder: (context, index) {
-              final usuario = usuarios[index];
-              return Card(
-                elevation: 3,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                margin: const EdgeInsets.symmetric(vertical: 8),
-                child: ListTile(
-                  contentPadding: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 12,
+(fontSize: 16, fontWeight: FontWeight.w600),
                   ),
-                  title: Text(
-                    usuario.nombreCompleto,
-                    style: const TextStyle(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 16,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: buttonColor,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 12,
                     ),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    elevation: 4,
+                    shadowColor: Colors.black45,
                   ),
-                  subtitle: Text(
-                    '${usuario.username} - ${usuario.rol}',
-                    style: const TextStyle(color: Colors.black54),
-                  ),
-                  trailing: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      IconButton(
-                        icon: const Icon(Icons.edit, color: Colors.indigo),
-                        tooltip: 'Editar usuario',
-                        onPressed: () =>
-                            _mostrarFormularioEditar(context, usuario),
-                      ),
-                      IconButton(
-                        icon: const Icon(Icons.delete, color: Colors.redAccent),
-                        tooltip: 'Eliminar usuario',
-                        onPressed: () async {
-                          final confirmar = await showDialog(
-                            context: context,
-                            builder: (_) => AlertDialog(
-                              title: const Text('¿Eliminar usuario?'),
-                              content: Text(
-                                '¿Estás seguro de eliminar a ${usuario.nombreCompleto}?',
-                              ),
-                              actions: [
-                                TextButton(
-                                  onPressed: () =>
-                                      Navigator.pop(context, false),
-                                  child: const Text('Cancelar'),
-                                ),
-                                ElevatedButton(
-                                  style: ElevatedButton.styleFrom(
-                                    backgroundColor: Colors.red,
-                                  ),
-                                  onPressed: () => Navigator.pop(context, true),
-                                  child: const Text('Eliminar'),
-                                ),
-                              ],
-                            ),
-                          );
-                          if (confirmar == true) {
-                            await _usuarioService.eliminarUsuario(usuario.id);
-                          }
-                        },
-                      ),
-                    ],
-                  ),
+                  onPressed: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                          builder: (_) => const AdminUsersScreen()),
+                    );
+                  },
                 ),
-              );
-            },
-          );
-        },
-      ),
-      floatingActionButton: FloatingActionButton(
-        backgroundColor: primaryColor,
-        foregroundColor: Colors.white,
-        elevation: 4,
-        tooltip: 'Crear nuevo usuario',
-        child: const Icon(Icons.add),
-        onPressed: () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(builder: (_) => AdminCreateUserScreen()),
-          );
-        },
+              ],
+            ),
+          ),
+          const SizedBox(height: 20),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 20),
+            child: TextField(
+              controller: _searchController,
+              decoration: InputDecoration(
+                hintText: 'Buscar por título o usuario',
+                prefixIcon: const Icon(Icons.search, color: Colors.grey),
+                filled: true,
+                fillColor: Colors.white,
+                contentPadding: const EdgeInsets.symmetric(vertical: 14),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(14),
+                  borderSide: BorderSide.none,
+                ),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(14),
+                  borderSide: BorderSide(color: Colors.grey.shade300, width: 1),
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(14),
+                  borderSide: BorderSide(color: buttonColor, width: 2),
+                ),
+                suffixIcon: _searchQuery.isNotEmpty
+                    ? IconButton(
+                        icon: const Icon(Icons.clear, color: Colors.grey),
+                        onPressed: () {
+                          setState(() {
+                            _searchQuery = '';
+                            _searchController.clear();
+                          });
+                        },
+                      )
+                    : null,
+              ),
+              onChanged: (value) {
+                setState(() {
+                  _searchQuery = value.toLowerCase().trim();
+                });
+              },
+            ),
+          ),
+          const SizedBox(height: 20),
+          Expanded(child: _buildTicketsList()),
+        ],
       ),
     );
   }
 
-  void _mostrarFormularioEditar(BuildContext context, Usuario usuario) {
-    final nombreController =
-        TextEditingController(text: usuario.nombreCompleto);
-    final usernameController = TextEditingController(text: usuario.username);
-    final emailController = TextEditingController(text: usuario.email);
-    String rolSeleccionado = usuario.rol;
+  Widget _buildTicketsList() {
+    final stream = _filterStatus == 'todos'
+        ? TicketService().obtenerTodosLosTickets()
+        : TicketService().obtenerTicketsPorEstado(_filterStatus);
 
+    return StreamBuilder<List<Ticket>>(
+      stream: stream,
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Center(child: CircularProgressIndicator());
+        }
+
+        if (!snapshot.hasData || snapshot.data!.isEmpty) {
+          return const Center(child: Text('No hay tickets disponibles'));
+        }
+
+        final tickets = snapshot.data!;
+        final filteredTickets = tickets.where((ticket) {
+          final titulo = ticket.titulo.toLowerCase();
+          final nombre = ticket.usuarioNombre.toLowerCase();
+          return titulo.contains(_searchQuery) || nombre.contains(_searchQuery);
+        }).toList();
+
+        if (filteredTickets.isEmpty) {
+          return const Center(
+            child: Text('No hay resultados para tu búsqueda'),
+          );
+        }
+
+        return ListView.separated(
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 4),
+          itemCount:
+              (_filterStatus == 'todos' ? 1 : 0) + filteredTickets.length,
+          separatorBuilder: (_, __) => const Divider(
+            height: 1,
+            color: Colors.grey,
+            indent: 12,
+            endIndent: 12,
+          ),
+          itemBuilder: (context, index) {
+            if (_filterStatus == 'todos' && index == 0) {
+              return DashboardWidget(tickets: tickets);
+            }
+
+            final ticket =
+                filteredTickets[_filterStatus == 'todos' ? index - 1 : index];
+
+            return Card(
+              elevation: 6,
+              shadowColor: Colors.black26,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(14),
+              ),
+              margin: const EdgeInsets.symmetric(vertical: 8),
+              child: ListTile(
+                contentPadding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 12,
+                ),
+                leading: CircleAvatar(
+                  radius: 24,
+                  backgroundColor: _getStatusColor(ticket.estado),
+                  child: const Icon(
+                    Icons.receipt,
+                    color: Colors.white,
+                    size: 28,
+                  ),
+                ),
+                title: Text(
+                  ticket.titulo,
+                  style: const TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    letterSpacing: 0.5,
+                  ),
+                ),
+                subtitle: Padding(
+                  padding: const EdgeInsets.only(top: 6),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          const Icon(
+                            Icons.person,
+                            size: 16,
+                            color: Colors.grey,
+                          ),
+                          const SizedBox(width: 6),
+                          Expanded(
+                            child: Text(
+                              ticket.usuarioNombre,
+                              style: const TextStyle(
+                                fontSize: 14,
+                                color: Colors.black87,
+                              ),
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 4),
+                      Row(
+                        children: [
+                          const Icon(
+                            Icons.info_outline,
+                            size: 16,
+                            color: Colors.grey,
+                          ),
+                          const SizedBox(width: 6),
+                          Text(
+                            ticket.estado.toUpperCase(),
+                            style: TextStyle(
+                              fontSize: 14,
+                              color: _getStatusColor(ticket.estado),
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                          const SizedBox(width: 16),
+                          const Icon(
+                            Icons.priority_high,
+                            size: 16,
+                            color: Colors.grey,
+                          ),
+                          const SizedBox(width: 6),
+                          Text(
+                            ticket.prioridad,
+                            style: const TextStyle(
+                              fontSize: 14,
+                              color: Colors.black87,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+                trailing: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Tooltip(
+                      message: 'Editar ticket',
+                      child: IconButton(
+                        icon: const Icon(Icons.edit, color: Color(0xFF3B5998)),
+                        onPressed: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) =>
+                                  AdminTicketDetailScreen(ticket: ticket),
+                            ),
+                          );
+                        },
+                      ),
+                    ),
+                    Tooltip(
+                      message: 'Eliminar ticket',
+                      child: IconButton(
+                        icon: const Icon(Icons.delete, color: Colors.redAccent),
+                        onPressed: () => _confirmarEliminar(ticket),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
+  void _confirmarEliminar(Ticket ticket) {
     showDialog(
       context: context,
-      builder: (_) => StatefulBuilder(
-        builder: (context, setState) => AlertDialog(
-          title: const Text('Editar Usuario'),
-          content: SingleChildScrollView(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                // ... campos ...
-              ],
-            ),
+      builder: (context) => AlertDialog(
+        title: const Text('¿Eliminar Ticket?'),
+        content: const Text('¿Estás seguro de eliminar este ticket?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancelar'),
           ),
-          actions: [
-            TextButton(
-              onPressed: () {
-                nombreController.dispose();
-                usernameController.dispose();
-                emailController.dispose();
-                Navigator.pop(context);
-              },
-              child: const Text('Cancelar'),
-            ),
-            ElevatedButton(
-              child: const Text('Guardar'),
-              onPressed: () async {
-                final actualizado = Usuario(
-                  id: usuario.id,
-                  username: usernameController.text.trim(),
-                  email: usuario.email,
-                  nombreCompleto: nombreController.text.trim(),
-                  fechaCreacion: usuario.fechaCreacion,
-                  ultimoLogin: usuario.ultimoLogin,
-                  emailVerificado: usuario.emailVerificado,
-                  rol: rolSeleccionado,
-                );
-
-                await _usuarioService.actualizarUsuario(actualizado);
-
-                nombreController.dispose();
-                usernameController.dispose();
-                emailController.dispose();
-
-                Navigator.pop(context);
-              },
-            ),
-          ],
-        ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+            onPressed: () async {
+              final navigator = Navigator.of(context);
+              await TicketService().eliminarTicket(ticket.id);
+              if (!context.mounted) return;
+              navigator.pop();
+            },
+            child: const Text('Eliminar'),
+          ),
+        ],
       ),
     );
   }
