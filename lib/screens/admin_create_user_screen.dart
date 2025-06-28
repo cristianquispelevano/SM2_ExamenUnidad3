@@ -2,7 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:proyecto_moviles2/services/auth_service.dart';
 
 class AdminCreateUserScreen extends StatefulWidget {
-  const AdminCreateUserScreen({Key? key}) : super(key: key);
+  const AdminCreateUserScreen({super.key});
+
 
   @override
   AdminCreateUserScreenState createState() => AdminCreateUserScreenState();

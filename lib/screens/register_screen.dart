@@ -4,13 +4,13 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'login_screen.dart';
 
 class RegisterScreen extends StatefulWidget {
-  const RegisterScreen({Key? key}) : super(key: key);
+  const RegisterScreen({super.key});
 
   @override
-  State<RegisterScreen> createState() => _RegisterScreenState();
+  RegisterScreenState createState() => RegisterScreenState();
 }
 
-class _RegisterScreenState extends State<RegisterScreen> {
+class RegisterScreenState extends State<RegisterScreen> {
   final _formKey = GlobalKey<FormState>();
   final _usernameController = TextEditingController();
   final _emailController = TextEditingController();
@@ -23,11 +23,11 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
   @override
   void dispose() {
-    _usernameController.dispose();
-    _emailController.dispose();
-    _passwordController.dispose();
-    _confirmPasswordController.dispose();
-    _nombreCompletoController.dispose();
+    _usernameController..dispose();
+    _emailController..dispose();
+    _passwordController..dispose();
+    _confirmPasswordController..dispose();
+    _nombreCompletoController..dispose();
     super.dispose();
   }
 
@@ -36,9 +36,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
     if (_passwordController.text.trim() !=
         _confirmPasswordController.text.trim()) {
-      setState(() {
-        _errorMessage = 'Las contraseñas no coinciden';
-      });
+      setState(() => _errorMessage = 'Las contraseñas no coinciden');
       return;
     }
 
@@ -48,7 +46,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
     });
 
     try {
-      // Verificar si el username ya existe
       final usernameQuery = await FirebaseFirestore.instance
           .collection('usuarios')
           .where('username', isEqualTo: _usernameController.text.trim())
@@ -62,14 +59,12 @@ class _RegisterScreenState extends State<RegisterScreen> {
         );
       }
 
-      // Crear usuario en Firebase Auth
       final userCredential =
           await FirebaseAuth.instance.createUserWithEmailAndPassword(
         email: _emailController.text.trim(),
         password: _passwordController.text.trim(),
       );
 
-      // Guardar información adicional en Firestore
       await FirebaseFirestore.instance
           .collection('usuarios')
           .doc(userCredential.user!.uid)
@@ -93,17 +88,11 @@ class _RegisterScreenState extends State<RegisterScreen> {
         MaterialPageRoute(builder: (_) => const LoginScreen()),
       );
     } on FirebaseAuthException catch (e) {
-      setState(() {
-        _errorMessage = _getErrorMessage(e.code);
-      });
+      setState(() => _errorMessage = _getErrorMessage(e.code));
     } catch (e) {
-      setState(() {
-        _errorMessage = 'Error desconocido: $e';
-      });
+      setState(() => _errorMessage = 'Error desconocido: $e');
     } finally {
-      if (mounted) {
-        setState(() => _isLoading = false);
-      }
+      if (mounted) setState(() => _isLoading = false);
     }
   }
 
@@ -152,9 +141,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
           borderRadius: BorderRadius.circular(14),
           borderSide: BorderSide(color: Colors.grey.shade300),
         ),
-        focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(14),
-          borderSide: const BorderSide(color: Color(0xFF3B5998), width: 2),
+        focusedBorder: const OutlineInputBorder(
+          borderRadius: BorderRadius.all(Radius.circular(14)),
+          borderSide: BorderSide(color: Color(0xFF3B5998), width: 2),
         ),
         contentPadding: const EdgeInsets.symmetric(vertical: 16),
       ),
@@ -175,11 +164,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                const Icon(
-                  Icons.account_circle_outlined,
-                  size: 100,
-                  color: primaryColor,
-                ),
+                const Icon(Icons.account_circle_outlined,
+                    size: 100, color: primaryColor),
                 const SizedBox(height: 24),
                 const Text(
                   'Crear Cuenta',
@@ -201,12 +187,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   labelText: 'Nombre de usuario',
                   prefixIcon: Icons.person,
                   textInputAction: TextInputAction.next,
-                  validator: (value) {
-                    if (value == null || value.trim().isEmpty) {
-                      return 'Por favor ingresa un nombre de usuario';
-                    }
-                    return null;
-                  },
+                  validator: (v) => v == null || v.trim().isEmpty
+                      ? 'Ingresa un nombre de usuario'
+                      : null,
                 ),
                 const SizedBox(height: 20),
                 _buildTextField(
@@ -214,12 +197,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   labelText: 'Nombre completo',
                   prefixIcon: Icons.badge,
                   textInputAction: TextInputAction.next,
-                  validator: (value) {
-                    if (value == null || value.trim().isEmpty) {
-                      return 'Por favor ingresa tu nombre completo';
-                    }
-                    return null;
-                  },
+                  validator: (v) => v == null || v.trim().isEmpty
+                      ? 'Ingresa tu nombre completo'
+                      : null,
                 ),
                 const SizedBox(height: 20),
                 _buildTextField(
@@ -228,13 +208,13 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   prefixIcon: Icons.email,
                   keyboardType: TextInputType.emailAddress,
                   textInputAction: TextInputAction.next,
-                  validator: (value) {
-                    if (value == null || value.trim().isEmpty) {
-                      return 'Por favor ingresa un correo electrónico';
+                  validator: (v) {
+                    if (v == null || v.trim().isEmpty) {
+                      return 'Ingresa un correo electrónico';
                     }
                     final emailRegex = RegExp(r'^[^@]+@[^@]+\.[^@]+');
-                    if (!emailRegex.hasMatch(value.trim())) {
-                      return 'Por favor ingresa un correo válido';
+                    if (!emailRegex.hasMatch(v.trim())) {
+                      return 'Ingresa un correo válido';
                     }
                     return null;
                   },
@@ -246,11 +226,11 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   prefixIcon: Icons.lock,
                   obscureText: true,
                   textInputAction: TextInputAction.next,
-                  validator: (value) {
-                    if (value == null || value.trim().isEmpty) {
-                      return 'Por favor ingresa una contraseña';
+                  validator: (v) {
+                    if (v == null || v.trim().isEmpty) {
+                      return 'Ingresa una contraseña';
                     }
-                    if (value.trim().length < 6) {
+                    if (v.trim().length < 6) {
                       return 'La contraseña debe tener al menos 6 caracteres';
                     }
                     return null;
@@ -262,11 +242,11 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   labelText: 'Confirmar contraseña',
                   prefixIcon: Icons.lock_outline,
                   obscureText: true,
-                  validator: (value) {
-                    if (value == null || value.trim().isEmpty) {
-                      return 'Por favor confirma tu contraseña';
+                  validator: (v) {
+                    if (v == null || v.trim().isEmpty) {
+                      return 'Confirma tu contraseña';
                     }
-                    if (value.trim() != _passwordController.text.trim()) {
+                    if (v.trim() != _passwordController.text.trim()) {
                       return 'Las contraseñas no coinciden';
                     }
                     return null;
@@ -276,11 +256,11 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   const SizedBox(height: 16),
                   Text(
                     _errorMessage!,
+                    textAlign: TextAlign.center,
                     style: const TextStyle(
                       color: Colors.redAccent,
                       fontWeight: FontWeight.w600,
                     ),
-                    textAlign: TextAlign.center,
                   ),
                 ],
                 const SizedBox(height: 32),
@@ -298,10 +278,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
                             elevation: 5,
                           ),
                           onPressed: _register,
-                          child: const Text(
-                            'Registrarse',
-                            style: TextStyle(fontSize: 18, color: Colors.white),
-                          ),
+                          child: const Text('Registrarse',
+                              style:
+                                  TextStyle(fontSize: 18, color: Colors.white)),
                         ),
                       ),
                 const SizedBox(height: 24),

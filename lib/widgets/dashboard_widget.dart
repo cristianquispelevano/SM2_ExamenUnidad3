@@ -10,12 +10,12 @@ class DashboardWidget extends StatelessWidget {
   Widget build(BuildContext context) {
     final total = tickets.length;
 
-    // Usar un Map para contar estados, para escalar si hay más estados
     final Map<String, int> estadoCounts = {
       'pendiente': 0,
       'en_proceso': 0,
       'resuelto': 0,
     };
+
     for (var ticket in tickets) {
       if (estadoCounts.containsKey(ticket.estado)) {
         estadoCounts[ticket.estado] = estadoCounts[ticket.estado]! + 1;
@@ -56,7 +56,9 @@ class DashboardWidget extends StatelessWidget {
       width: 160,
       child: Card(
         elevation: 3,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12),
+        ),
         child: Padding(
           padding: const EdgeInsets.all(16.0),
           child: Column(
@@ -80,7 +82,7 @@ class DashboardWidget extends StatelessWidget {
               const SizedBox(height: 8),
               Text(
                 '$count ticket${count != 1 ? 's' : ''} (${(porcentaje * 100).toStringAsFixed(1)}%)',
-                style: TextStyle(
+                style: const TextStyle(
                   color: Colors.black87,
                   fontWeight: FontWeight.w600,
                 ),

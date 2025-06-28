@@ -13,8 +13,8 @@ class LoginScreen extends StatefulWidget {
 }
 
 class LoginScreenState extends State<LoginScreen> {
-  final TextEditingController _usernameController = TextEditingController();
-  final TextEditingController _passwordController = TextEditingController();
+  final _usernameController = TextEditingController();
+  final _passwordController = TextEditingController();
   bool _isLoading = false;
   String? _errorMessage;
 
@@ -26,7 +26,6 @@ class LoginScreenState extends State<LoginScreen> {
   }
 
   Future<void> _login() async {
-    // Cierra el teclado.
     FocusScope.of(context).unfocus();
 
     final username = _usernameController.text.trim();
@@ -42,10 +41,9 @@ class LoginScreenState extends State<LoginScreen> {
       _errorMessage = null;
     });
 
-    try {
-      // Guarda una referencia a Navigator antes del primer await.
-      final navigator = Navigator.of(context);
+    final navigator = Navigator.of(context);
 
+    try {
       final querySnapshot = await FirebaseFirestore.instance
           .collection('usuarios')
           .where('username', isEqualTo: username)
@@ -53,6 +51,7 @@ class LoginScreenState extends State<LoginScreen> {
           .get();
 
       if (querySnapshot.docs.isEmpty) {
+        if (!mounted) return;
         setState(() {
           _errorMessage = 'Usuario no encontrado';
           _isLoading = false;
@@ -60,8 +59,7 @@ class LoginScreenState extends State<LoginScreen> {
         return;
       }
 
-      final userDoc = querySnapshot.docs.first;
-      final email = userDoc.get('email') as String;
+      final email = querySnapshot.docs.first.get('email') as String;
 
       await FirebaseAuth.instance.signInWithEmailAndPassword(
         email: email,
@@ -70,6 +68,7 @@ class LoginScreenState extends State<LoginScreen> {
 
       final user = FirebaseAuth.instance.currentUser;
       if (user == null) {
+        if (!mounted) return;
         setState(() {
           _errorMessage = 'Error al autenticar usuario';
           _isLoading = false;
@@ -82,36 +81,25 @@ class LoginScreenState extends State<LoginScreen> {
           .doc(user.uid)
           .get();
 
-      if (!userSnapshot.exists) {
-        setState(() {
-          _errorMessage =
-              'No se encontró información del usuario en la base de datos.';
-          _isLoading = false;
-        });
-        return;
-      }
+      final role = (userSnapshot.data()?['rol'] ?? '').toString().toLowerCase();
 
-      final role = (userSnapshot.get('rol') as String?)?.toLowerCase() ?? '';
+      if (!mounted) return;
 
-      if (!mounted) return; // Verifica que el widget siga montado.
-
-      if (role == 'admin') {
-        navigator.pushReplacement(
-          MaterialPageRoute(builder: (_) => const AdminTicketsScreen()),
-        );
-      } else {
-        navigator.pushReplacement(
-          MaterialPageRoute(builder: (_) => const HomeScreen()),
-        );
-      }
+      navigator.pushReplacement(
+        MaterialPageRoute(
+          builder: (_) =>
+              role == 'admin' ? const AdminTicketsScreen() : const HomeScreen(),
+        ),
+      );
     } on FirebaseAuthException catch (e) {
+      if (!mounted) return;
       setState(() => _errorMessage = _getErrorMessage(e.code));
     } catch (e) {
+      if (!mounted) return;
       setState(() => _errorMessage = 'Error desconocido: $e');
     } finally {
-      if (mounted) {
-        setState(() => _isLoading = false);
-      }
+      if (!mounted) return;
+      setState(() => _isLoading = false);
     }
   }
 
@@ -220,11 +208,11 @@ class LoginScreenState extends State<LoginScreen> {
                 const SizedBox(height: 16),
                 Text(
                   _errorMessage!,
+                  textAlign: TextAlign.center,
                   style: const TextStyle(
                     color: Colors.redAccent,
                     fontWeight: FontWeight.w600,
                   ),
-                  textAlign: TextAlign.center,
                 ),
               ],
               const SizedBox(height: 32),
@@ -242,10 +230,9 @@ class LoginScreenState extends State<LoginScreen> {
                           elevation: 5,
                         ),
                         onPressed: _login,
-                        child: const Text(
-                          'Iniciar Sesión',
-                          style: TextStyle(fontSize: 18, color: Colors.white),
-                        ),
+                        child: const Text('Iniciar Sesión',
+                            style:
+                                TextStyle(fontSize: 18, color: Colors.white)),
                       ),
                     ),
               const SizedBox(height: 24),

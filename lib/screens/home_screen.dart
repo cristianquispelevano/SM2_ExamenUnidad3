@@ -8,11 +8,13 @@ import 'package:proyecto_moviles2/screens/admin_tickets_screen.dart';
 import 'package:proyecto_moviles2/services/ticket_service.dart';
 
 class HomeScreen extends StatefulWidget {
+  const HomeScreen({super.key});
+
   @override
-  _HomeScreenState createState() => _HomeScreenState();
+  HomeScreenState createState() => HomeScreenState();
 }
 
-class _HomeScreenState extends State<HomeScreen> {
+class HomeScreenState extends State<HomeScreen> {
   final TicketService _ticketService = TicketService();
   User? _user;
   String _userRole = '';
@@ -27,11 +29,12 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Future<void> _loadUserAndRole() async {
+    final navigator = Navigator.of(context);
     _user = FirebaseAuth.instance.currentUser;
+
     if (_user == null) {
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (context) => LoginScreen()),
+      navigator.pushReplacement(
+        MaterialPageRoute(builder: (_) => const LoginScreen()),
       );
       return;
     }
@@ -42,23 +45,19 @@ class _HomeScreenState extends State<HomeScreen> {
           .doc(_user!.uid)
           .get();
 
-      if (userDoc.exists) {
-        setState(() {
-          _userRole = (userDoc.data()?['rol'] ?? '').toString();
-          _isLoadingRole = false;
-        });
-      } else {
-        setState(() {
-          _userRole = '';
-          _isLoadingRole = false;
-        });
-      }
+      if (!mounted) return;
+
+      setState(() {
+        _userRole = (userDoc.data()?['rol'] ?? '').toString();
+        _isLoadingRole = false;
+      });
     } catch (e) {
+      if (!mounted) return;
       setState(() {
         _userRole = '';
         _isLoadingRole = false;
       });
-      print('Error al cargar rol: $e');
+      debugPrint('Error al cargar rol: $e');
     }
   }
 
@@ -81,19 +80,18 @@ class _HomeScreenState extends State<HomeScreen> {
       appBar: AppBar(
         backgroundColor: primaryColor,
         centerTitle: true,
-        title: const Text(
-          'Sistema de Tickets',
-          style: TextStyle(color: Colors.white),
-        ),
+        title: const Text('Sistema de Tickets',
+            style: TextStyle(color: Colors.white)),
         actions: [
           IconButton(
             icon: const Icon(Icons.logout, color: Colors.white),
             tooltip: 'Cerrar sesión',
             onPressed: () async {
               await FirebaseAuth.instance.signOut();
+              if (!mounted) return;
               Navigator.pushReplacement(
                 context,
-                MaterialPageRoute(builder: (context) => LoginScreen()),
+                MaterialPageRoute(builder: (_) => const LoginScreen()),
               );
             },
           ),
@@ -112,7 +110,7 @@ class _HomeScreenState extends State<HomeScreen> {
               color: Colors.blue,
               onPressed: () => Navigator.push(
                 context,
-                MaterialPageRoute(builder: (_) => CreateTicketScreen()),
+                MaterialPageRoute(builder: (_) => const CreateTicketScreen()),
               ),
             ),
             _buildActionButton(
@@ -137,7 +135,8 @@ class _HomeScreenState extends State<HomeScreen> {
                 onPressed: () {
                   Navigator.push(
                     context,
-                    MaterialPageRoute(builder: (_) => AdminTicketsScreen()),
+                    MaterialPageRoute(
+                        builder: (_) => const AdminTicketsScreen()),
                   );
                 },
               ),
@@ -168,7 +167,7 @@ class _HomeScreenState extends State<HomeScreen> {
         onPressed: () {
           Navigator.push(
             context,
-            MaterialPageRoute(builder: (_) => CreateTicketScreen()),
+            MaterialPageRoute(builder: (_) => const CreateTicketScreen()),
           );
         },
         tooltip: 'Crear Ticket Rápido',
@@ -220,7 +219,7 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   void _showSearchDialog(BuildContext context) {
-    final TextEditingController _searchController = TextEditingController();
+    final searchController = TextEditingController();
 
     showDialog(
       context: context,
@@ -230,7 +229,7 @@ class _HomeScreenState extends State<HomeScreen> {
           mainAxisSize: MainAxisSize.min,
           children: [
             TextField(
-              controller: _searchController,
+              controller: searchController,
               decoration: const InputDecoration(
                 labelText: 'Título del Ticket',
                 hintText: 'Ingrese el título del ticket',
@@ -243,12 +242,12 @@ class _HomeScreenState extends State<HomeScreen> {
                 foregroundColor: Colors.white,
               ),
               onPressed: () async {
-                final searchQuery = _searchController.text.trim();
+                final searchQuery = searchController.text.trim();
                 if (searchQuery.isEmpty) {
                   ScaffoldMessenger.of(context).showSnackBar(
                     const SnackBar(
-                      content: Text('Por favor ingrese un valor para buscar'),
-                    ),
+                        content:
+                            Text('Por favor ingrese un valor para buscar')),
                   );
                   return;
                 }
@@ -257,24 +256,24 @@ class _HomeScreenState extends State<HomeScreen> {
                 try {
                   final tickets =
                       await _ticketService.buscarTicketsPorTituloYUsuarioLocal(
-                          searchQuery, _user!.uid);
+                    searchQuery,
+                    _user!.uid,
+                  );
 
                   if (tickets.isEmpty) {
                     ScaffoldMessenger.of(context).showSnackBar(
                       const SnackBar(
-                        content:
-                            Text('No se encontraron tickets con ese título'),
-                      ),
+                          content:
+                              Text('No se encontraron tickets con ese título')),
                     );
                   } else {
+                    if (!mounted) return;
                     Navigator.pop(context);
                     Navigator.push(
                       context,
                       MaterialPageRoute(
                         builder: (_) => ViewTicketsScreen(
-                          userId: _user!.uid,
-                          tickets: tickets,
-                        ),
+                            userId: _user!.uid, tickets: tickets),
                       ),
                     );
                   }

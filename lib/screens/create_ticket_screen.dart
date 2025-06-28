@@ -1,15 +1,17 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
-import 'dart:convert';
-import 'package:flutter_dotenv/flutter_dotenv.dart'; // para acceder a la key
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:proyecto_moviles2/services/ticket_service.dart';
 
 class CreateTicketScreen extends StatefulWidget {
+  const CreateTicketScreen({super.key});
+
   @override
-  _CreateTicketScreenState createState() => _CreateTicketScreenState();
+  CreateTicketScreenState createState() => CreateTicketScreenState();
 }
 
-class _CreateTicketScreenState extends State<CreateTicketScreen> {
+class CreateTicketScreenState extends State<CreateTicketScreen> {
   final _formKey = GlobalKey<FormState>();
   final _titleController = TextEditingController();
   final _descriptionController = TextEditingController();
@@ -21,7 +23,6 @@ class _CreateTicketScreenState extends State<CreateTicketScreen> {
   String? _recommendation;
 
   final TicketService _ticketService = TicketService();
-
   final Color primaryColor = const Color(0xFF3B5998);
 
   @override
@@ -32,6 +33,7 @@ class _CreateTicketScreenState extends State<CreateTicketScreen> {
   }
 
   void _showSnackBar(String message, {Color bgColor = Colors.red}) {
+    if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(content: Text(message), backgroundColor: bgColor),
     );
@@ -43,10 +45,8 @@ class _CreateTicketScreenState extends State<CreateTicketScreen> {
       appBar: AppBar(
         automaticallyImplyLeading: true,
         iconTheme: const IconThemeData(color: Colors.white),
-        title: const Text(
-          'Crear Nuevo Ticket',
-          style: TextStyle(color: Colors.white),
-        ),
+        title: const Text('Crear Nuevo Ticket',
+            style: TextStyle(color: Colors.white)),
         backgroundColor: primaryColor,
       ),
       backgroundColor: const Color(0xFFF5F7FA),
@@ -59,10 +59,8 @@ class _CreateTicketScreenState extends State<CreateTicketScreen> {
               TextFormField(
                 controller: _titleController,
                 decoration: const InputDecoration(
-                  labelText: 'Título',
-                  border: OutlineInputBorder(),
-                ),
-                validator: (value) => value == null || value.isEmpty
+                    labelText: 'Título', border: OutlineInputBorder()),
+                validator: (v) => v == null || v.isEmpty
                     ? 'Por favor ingrese un título'
                     : null,
               ),
@@ -74,23 +72,19 @@ class _CreateTicketScreenState extends State<CreateTicketScreen> {
                   border: OutlineInputBorder(),
                 ),
                 maxLines: 5,
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
+                validator: (v) {
+                  if (v == null || v.isEmpty)
                     return 'Por favor ingrese una descripción';
-                  }
-                  if (value.length < 20) {
+                  if (v.length < 20)
                     return 'La descripción debe tener al menos 20 caracteres';
-                  }
                   return null;
                 },
               ),
               const SizedBox(height: 16),
               if (_priorityDetermined)
                 Container(
-                  padding: const EdgeInsets.symmetric(
-                    vertical: 8,
-                    horizontal: 12,
-                  ),
+                  padding:
+                      const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
                   margin: const EdgeInsets.only(bottom: 12),
                   decoration: BoxDecoration(
                     color: _getPriorityColor(_priority),
@@ -99,9 +93,7 @@ class _CreateTicketScreenState extends State<CreateTicketScreen> {
                   child: Text(
                     'Prioridad: ${_priority.toUpperCase()}',
                     style: const TextStyle(
-                      color: Colors.white,
-                      fontWeight: FontWeight.bold,
-                    ),
+                        color: Colors.white, fontWeight: FontWeight.bold),
                   ),
                 ),
               if (_priorityDetermined && _recommendation != null)
@@ -132,11 +124,10 @@ class _CreateTicketScreenState extends State<CreateTicketScreen> {
               DropdownButtonFormField<String>(
                 value: _category,
                 items: _buildCategoryItems(),
-                onChanged: (value) => setState(() => _category = value!),
+                onChanged: (v) => setState(() => _category = v!),
                 decoration: const InputDecoration(
-                  labelText: 'Área de la Municipalidad',
-                  border: OutlineInputBorder(),
-                ),
+                    labelText: 'Área de la Municipalidad',
+                    border: OutlineInputBorder()),
               ),
               const SizedBox(height: 24),
               if (_isLoading)
@@ -154,12 +145,10 @@ class _CreateTicketScreenState extends State<CreateTicketScreen> {
                           foregroundColor: Colors.white,
                           minimumSize: const Size.fromHeight(50),
                           textStyle: const TextStyle(
-                            fontWeight: FontWeight.bold,
-                            fontSize: 16,
-                          ),
+                              fontWeight: FontWeight.bold, fontSize: 16),
                         ),
                       ),
-                    const SizedBox(height: 12),
+                    if (_priorityDetermined) const SizedBox(height: 12),
                     if (_priorityDetermined)
                       ElevatedButton.icon(
                         onPressed: _canCreateTicket ? _submitTicket : null,
@@ -170,9 +159,7 @@ class _CreateTicketScreenState extends State<CreateTicketScreen> {
                           foregroundColor: Colors.white,
                           minimumSize: const Size.fromHeight(50),
                           textStyle: const TextStyle(
-                            fontWeight: FontWeight.bold,
-                            fontSize: 16,
-                          ),
+                              fontWeight: FontWeight.bold, fontSize: 16),
                         ),
                       ),
                   ],
@@ -185,7 +172,7 @@ class _CreateTicketScreenState extends State<CreateTicketScreen> {
   }
 
   List<DropdownMenuItem<String>> _buildCategoryItems() {
-    const List<String> categorias = [
+    const areas = [
       'Mesa de Partes',
       'Portería de Ingreso de Personal',
       'Equipo Funcional de Archivo Central',
@@ -215,9 +202,9 @@ class _CreateTicketScreenState extends State<CreateTicketScreen> {
       'Servicio Equipo Mecanico',
       'Sub Gerencia de Desarrollo Economico y Turismo',
     ];
-    return categorias.map((area) {
-      return DropdownMenuItem(value: area, child: Text(area));
-    }).toList();
+    return areas
+        .map((a) => DropdownMenuItem(value: a, child: Text(a)))
+        .toList();
   }
 
   Future<void> _analyzePriority() async {
@@ -229,10 +216,8 @@ class _CreateTicketScreenState extends State<CreateTicketScreen> {
     });
 
     try {
-      final result = await _determinePriorityWithAI(
-        _descriptionController.text.trim(),
-      );
-
+      final result =
+          await _determinePriorityWithAI(_descriptionController.text.trim());
       setState(() {
         _priority = result['priority']!;
         _recommendation = result['recommendation'];
@@ -242,12 +227,12 @@ class _CreateTicketScreenState extends State<CreateTicketScreen> {
     } catch (e) {
       _showSnackBar('Error al analizar prioridad: $e');
     } finally {
-      setState(() => _isLoading = false);
+      if (mounted) setState(() => _isLoading = false);
     }
   }
 
-  Color _getPriorityColor(String priority) {
-    switch (priority) {
+  Color _getPriorityColor(String p) {
+    switch (p) {
       case 'alta':
         return Colors.red;
       case 'media':
@@ -276,71 +261,56 @@ class _CreateTicketScreenState extends State<CreateTicketScreen> {
         categoria: _category,
       );
 
-      _showSnackBar(
-        'Ticket creado con prioridad ${_priority.toUpperCase()}!',
-        bgColor: Colors.green,
-      );
-
+      if (!mounted) return;
+      _showSnackBar('Ticket creado con prioridad ${_priority.toUpperCase()}!',
+          bgColor: Colors.green);
       Navigator.pop(context);
     } catch (e) {
       _showSnackBar('Error: $e');
     } finally {
-      setState(() => _isLoading = false);
+      if (mounted) setState(() => _isLoading = false);
     }
   }
 
-  Future<Map<String, String>> _determinePriorityWithAI(
-    String description,
-  ) async {
+  Future<Map<String, String>> _determinePriorityWithAI(String desc) async {
     final apiKey = dotenv.env['HUGGINGFACE_API_KEY'] ?? '';
     if (apiKey.isEmpty)
       throw Exception('API Key de Hugging Face no configurada.');
 
-    final response = await http.post(
+    final res = await http.post(
       Uri.parse(
-        'https://api-inference.huggingface.co/models/nlptown/bert-base-multilingual-uncased-sentiment',
-      ),
+          'https://api-inference.huggingface.co/models/nlptown/bert-base-multilingual-uncased-sentiment'),
       headers: {
         'Authorization': 'Bearer $apiKey',
-        'Content-Type': 'application/json',
+        'Content-Type': 'application/json'
       },
-      body: jsonEncode({'inputs': description}),
+      body: jsonEncode({'inputs': desc}),
     );
 
-    if (response.statusCode == 200) {
-      final decoded = jsonDecode(response.body);
-      if (decoded is List && decoded.isNotEmpty) {
-        final first = decoded[0];
-        if (first is List &&
-            first.isNotEmpty &&
-            first[0] is Map<String, dynamic>) {
-          final label = first[0]['label'] as String? ?? '';
-
-          String priority;
-          String recommendation;
-
-          if (label.startsWith('1') || label.startsWith('2')) {
-            priority = 'alta';
-            recommendation =
-                'Por favor, contacte al soporte técnico de inmediato.';
-          } else if (label.startsWith('3')) {
-            priority = 'media';
-            recommendation = 'Revise los procedimientos estándar y reintente.';
-          } else {
-            priority = 'baja';
-            recommendation =
-                'Puede esperar una respuesta en las próximas 48 horas.';
-          }
-
-          return {'priority': priority, 'recommendation': recommendation};
-        } else {
-          throw Exception('Formato inesperado en la respuesta.');
-        }
-      } else {
-        throw Exception('Respuesta inesperada del API.');
-      }
-    } else {
-      throw Exception('Error HTTP ${response.statusCode}: ${response.body}');
+    if (res.statusCode != 200) {
+      throw Exception('Error HTTP ${res.statusCode}: ${res.body}');
     }
+
+    final decoded = jsonDecode(res.body);
+    if (decoded is! List || decoded.isEmpty || decoded[0] is! List) {
+      throw Exception('Respuesta inesperada del API.');
+    }
+
+    final label = decoded[0][0]['label'] as String? ?? '';
+    late final String priority;
+    late final String recommendation;
+
+    if (label.startsWith('1') || label.startsWith('2')) {
+      priority = 'alta';
+      recommendation = 'Por favor, contacte al soporte técnico de inmediato.';
+    } else if (label.startsWith('3')) {
+      priority = 'media';
+      recommendation = 'Revise los procedimientos estándar y reintente.';
+    } else {
+      priority = 'baja';
+      recommendation = 'Puede esperar una respuesta en las próximas 48 horas.';
+    }
+
+    return {'priority': priority, 'recommendation': recommendation};
   }
 }
